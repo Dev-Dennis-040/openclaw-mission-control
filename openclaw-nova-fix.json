@@ -1,0 +1,162 @@
+{
+    "meta": {
+        "lastTouchedVersion": "2026.2.22-2",
+        "lastTouchedAt": "2026-03-02T15:25:07.728Z"
+    },
+    "env": {
+        "shellEnv": {
+            "enabled": true
+        },
+        "vars": {
+            "OPENAI_API_KEY": ""
+        }
+    },
+    "diagnostics": {
+        "otel": {
+            "headers": {
+                "custom-1": ""
+            }
+        }
+    },
+    "update": {
+        "checkOnStart": true
+    },
+    "browser": {
+        "headless": true,
+        "noSandbox": true,
+        "defaultProfile": "openclaw"
+    },
+    "models": {
+        "mode": "merge",
+        "providers": {}
+    },
+    "agents": {
+        "defaults": {
+            "model": {
+                "primary": "google/gemini-2.5-flash"
+            },
+            "models": {
+                "openai/gpt-5.2": {
+                    "alias": "ChatGPT 5.2"
+                },
+                "openai/gpt-5.1-codex": {
+                    "alias": "ChatGPT 5.1 Codex"
+                },
+                "openai/gpt-5": {
+                    "alias": "ChatGPT 5"
+                },
+                "openai/gpt-5-mini": {
+                    "alias": "ChatGPT 5 Mini"
+                },
+                "openai/gpt-4.1": {
+                    "alias": "ChatGPT 4.1"
+                },
+                "google/gemini-3-pro-preview": {
+                    "alias": "Gemini 3 Pro Preview"
+                },
+                "google/gemini-3-flash-preview": {
+                    "alias": "Gemini 3 Flash Preview"
+                },
+                "google/gemini-2.5-flash": {
+                    "alias": "Gemini 2.5 Flash"
+                },
+                "google/gemini-2.5-flash-lite": {
+                    "alias": "Gemini 2.5 Flash Lite"
+                }
+            },
+            "compaction": {
+                "mode": "safeguard"
+            }
+        },
+        "list": [
+            {
+                "id": "mc-gateway-41f03aac-5669-4e1b-9fe8-cae9ed1417be",
+                "name": "Nova Gateway Agent",
+                "workspace": "/data/workspace-gateway-41f03aac-5669-4e1b-9fe8-cae9ed1417be",
+                "agentDir": "/data/.openclaw/agents/mc-gateway-41f03aac-5669-4e1b-9fe8-cae9ed1417be/agent",
+                "heartbeat": {
+                    "every": "10m",
+                    "includeReasoning": false,
+                    "target": "last"
+                }
+            },
+            {
+                "id": "mc-37ec49de-631a-42a9-8928-cbee6c7140fd",
+                "name": "Nova",
+                "workspace": "/data/workspace-mc-37ec49de-631a-42a9-8928-cbee6c7140fd",
+                "agentDir": "/data/.openclaw/agents/mc-37ec49de-631a-42a9-8928-cbee6c7140fd/agent",
+                "heartbeat": {
+                    "every": "10m",
+                    "includeReasoning": false,
+                    "target": "last"
+                },
+                "tools": {
+                    "exec": {
+                        "host": "gateway"
+                    }
+                }
+            }
+        ]
+    },
+    "commands": {
+        "native": "auto",
+        "nativeSkills": "auto",
+        "bash": true,
+        "restart": true,
+        "ownerDisplay": "raw"
+    },
+    "hooks": {
+        "token": "ix1Gy4e2r1WAo6V37nBUuG6635qNOQrA_prive"
+    },
+    "gateway": {
+        "mode": "local",
+        "controlUi": {
+            "allowedOrigins": [
+                "https://prive.devdennis.com",
+                "http://prive.devdennis.com",
+                "*"
+            ],
+            "allowInsecureAuth": false
+        },
+        "auth": {
+            "mode": "token",
+            "token": "ix1Gy4e2r1WAo6V37nBUuG6635qNOQrA_prive"
+        },
+        "trustedProxies": [
+            "127.0.0.1/32",
+            "0.0.0.0/0",
+            "::/0"
+        ],
+        "remote": {
+            "token": "ix1Gy4e2r1WAo6V37nBUuG6635qNOQrA_prive"
+        }
+    },
+    "plugins": {
+        "entries": {
+            "whatsapp": {
+                "enabled": true
+            },
+            "discord": {
+                "enabled": true
+            },
+            "imessage": {
+                "enabled": false
+            },
+            "slack": {
+                "enabled": true
+            },
+            "nostr": {
+                "enabled": true
+            },
+            "signal": {
+                "enabled": false
+            },
+            "googlechat": {
+                "enabled": true
+            },
+            "telegram": {
+                "enabled": true
+            }
+        }
+    }
+}

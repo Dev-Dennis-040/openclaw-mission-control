@@ -2450,6 +2450,8 @@ async def _record_task_comment_from_update(
         ),
     )
     session.add(event)
+    update.task.updated_at = utcnow()
+    session.add(update.task)
     await session.commit()
 
 
@@ -2672,6 +2674,8 @@ async def create_task_comment(
         agent_id=_comment_actor_id(actor),
     )
     session.add(event)
+    task.updated_at = utcnow()
+    session.add(task)
     await session.commit()
     await session.refresh(event)
     targets, mention_names = await _comment_targets(

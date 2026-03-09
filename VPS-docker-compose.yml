@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  mission-control:
+    image: ghcr.io/abhi1693/openclaw-mission-control:latest
+    container_name: mission-control
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mission-control.rule=Host(`mc.devdennis.com`)"
+      - "traefik.http.routers.mission-control.entrypoints=websecure"
+      - "traefik.http.routers.mission-control.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.mission-control.loadbalancer.server.port=3000"
+networks:
+  traefik-net:
+    external: true
