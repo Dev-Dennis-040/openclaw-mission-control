@@ -247,6 +247,10 @@ class AgentRead(AgentBase):
     )
     created_at: datetime = Field(description="Creation timestamp.")
     updated_at: datetime = Field(description="Last update timestamp.")
+    installed_skills: list[str] = Field(
+        default_factory=list,
+        description="Names of skills installed on this agent's gateway.",
+    )
 
 
 class AgentHeartbeat(SQLModel):

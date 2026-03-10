@@ -44,4 +44,6 @@ export interface AgentRead {
   created_at: string;
   /** Last update timestamp. */
   updated_at: string;
+  /** Names of skills installed on this agent's gateway. */
+  installed_skills?: string[];
 }

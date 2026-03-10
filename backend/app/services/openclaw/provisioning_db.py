@@ -35,6 +35,7 @@ from app.models.board_webhooks import BoardWebhook
 from app.models.boards import Board
 from app.models.gateways import Gateway
 from app.models.organizations import Organization
+from app.models.skills import GatewayInstalledSkill, MarketplaceSkill
 from app.models.tasks import Task
 from app.schemas.agents import (
     AgentCreate,
@@ -843,10 +844,17 @@ class AgentLifecycleService(OpenClawDBService):
         return agent.board_id is None
 
     @classmethod
-    def to_agent_read(cls, agent: Agent) -> AgentRead:
+    def to_agent_read(
+        cls,
+        agent: Agent,
+        installed_skills: list[str] | None = None,
+    ) -> AgentRead:
         model = AgentRead.model_validate(agent, from_attributes=True)
         return model.model_copy(
-            update={"is_gateway_main": cls.is_gateway_main(agent)},
+            update={
+                "is_gateway_main": cls.is_gateway_main(agent),
+                "installed_skills": installed_skills or [],
+            },
         )
 
     @staticmethod
@@ -1488,11 +1496,45 @@ class AgentLifecycleService(OpenClawDBService):
             )
         statement = statement.order_by(col(Agent.created_at).desc())
 
+        async def _fetch_skills_by_gateway(agent_list: list[Agent]) -> dict[UUID, list[str]]:
+            """Batch-fetch installed skill names grouped by gateway_id."""
+            gateway_ids = list({a.gateway_id for a in agent_list})
+            if not gateway_ids:
+                return {}
+            skills_stmt = (
+                select(GatewayInstalledSkill.gateway_id, MarketplaceSkill.name)
+                .join(
+                    MarketplaceSkill,
+                    GatewayInstalledSkill.skill_id == MarketplaceSkill.id,
+                )
+                .where(col(GatewayInstalledSkill.gateway_id).in_(gateway_ids))
+            )
+            rows = (await self.session.exec(skills_stmt)).all()
+            result: dict[UUID, list[str]] = {}
+            for gw_id, skill_name in rows:
+                result.setdefault(gw_id, []).append(skill_name)
+            return result
+
         def _transform(items: Sequence[Any]) -> Sequence[Any]:
             agents = self.coerce_agent_items(items)
             return [self.to_agent_read(self.with_computed_status(agent)) for agent in agents]
 
-        return await paginate(self.session, statement, transformer=_transform)
+        # We need skills data before pagination transforms happen, so we do a
+        # two-step: paginate first, then enrich with skills.
+        page = await paginate(self.session, statement, transformer=_transform)
+        # Re-fetch skills for the agents we got back.
+        agent_objs_for_skills: list[Agent] = []
+        for read_item in page.items:
+            agent_stub = Agent()
+            agent_stub.gateway_id = read_item.gateway_id  # type: ignore[assignment]
+            agent_objs_for_skills.append(agent_stub)
+        skills_map = await _fetch_skills_by_gateway(agent_objs_for_skills)
+        enriched = [
+            item.model_copy(update={"installed_skills": skills_map.get(item.gateway_id, [])})
+            for item in page.items
+        ]
+        page.items = enriched  # type: ignore[assignment]
+        return page
 
     async def stream_agents(
         self,

@@ -152,6 +152,36 @@ export function AgentsTable({
         header: "Updated",
         cell: ({ row }) => dateCell(row.original.updated_at),
       },
+      {
+        accessorKey: "installed_skills",
+        header: "Skills",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const skills: string[] = row.original.installed_skills ?? [];
+          if (skills.length === 0) {
+            return <span className="text-sm text-slate-400">—</span>;
+          }
+          const visible = skills.slice(0, 3);
+          const overflow = skills.length - visible.length;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {visible.map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700"
+                >
+                  {skill}
+                </span>
+              ))}
+              {overflow > 0 && (
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                  +{overflow}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
     ];
 
     return baseColumns;
