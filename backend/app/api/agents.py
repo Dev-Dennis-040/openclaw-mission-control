@@ -146,18 +146,18 @@ async def list_agents_hub(
     agent_ids = [a.id for a in agents]
     done_rows = list(
         await session.exec(
-            select(Task.agent_id, sa_func.count().label("cnt"))
-            .where(col(Task.agent_id).in_(agent_ids))
+            select(Task.assigned_agent_id, sa_func.count().label("cnt"))
+            .where(col(Task.assigned_agent_id).in_(agent_ids))
             .where(col(Task.status) == "done")
-            .group_by(col(Task.agent_id))
+            .group_by(col(Task.assigned_agent_id))
         )
     )
     active_rows = list(
         await session.exec(
-            select(Task.agent_id, sa_func.count().label("cnt"))
-            .where(col(Task.agent_id).in_(agent_ids))
+            select(Task.assigned_agent_id, sa_func.count().label("cnt"))
+            .where(col(Task.assigned_agent_id).in_(agent_ids))
             .where(col(Task.status) == "in_progress")
-            .group_by(col(Task.agent_id))
+            .group_by(col(Task.assigned_agent_id))
         )
     )
     done_map: dict[UUID, int] = {row[0]: int(row[1]) for row in done_rows if row[0]}
