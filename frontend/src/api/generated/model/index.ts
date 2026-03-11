@@ -13,6 +13,7 @@ export * from "./agentCreateIdentityProfile";
 export * from "./agentHealthStatusResponse";
 export * from "./agentHeartbeat";
 export * from "./agentHeartbeatCreate";
+export * from "./agentHubGatewayRead";
 export * from "./agentNudge";
 export * from "./agentRead";
 export * from "./agentReadHeartbeatConfig";

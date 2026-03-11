@@ -300,6 +300,16 @@ class AgentHeartbeatCreate(AgentHeartbeat):
     )
 
 
+class AgentHubGatewayRead(SQLModel):
+    """Grouped agents-per-gateway payload for the Agent Hub overview."""
+
+    gateway_id: UUID
+    gateway_name: str
+    total_tasks_done: int = 0
+    total_tasks_active: int = 0
+    agents: list["AgentRead"] = Field(default_factory=list)
+
+
 class AgentNudge(SQLModel):
     """Nudge message payload for pinging an agent."""
 

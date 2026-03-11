@@ -16,6 +16,7 @@ from app.schemas.agents import (
     AgentCreate,
     AgentHeartbeat,
     AgentHeartbeatCreate,
+    AgentHubGatewayRead,
     AgentRead,
     AgentUpdate,
 )
@@ -27,6 +28,13 @@ from app.services.organizations import OrganizationContext
 if TYPE_CHECKING:
     from fastapi_pagination.limit_offset import LimitOffsetPage
     from sqlmodel.ext.asyncio.session import AsyncSession
+
+from sqlalchemy import func as sa_func
+from sqlmodel import col, select
+
+from app.models.agents import Agent
+from app.models.gateways import Gateway
+from app.models.tasks import Task
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -101,6 +109,74 @@ async def create_agent(
     """Create and provision an agent."""
     service = AgentLifecycleService(session)
     return await service.create_agent(payload=payload, actor=actor)
+
+
+@router.get("/hub", response_model=list[AgentHubGatewayRead])
+async def list_agents_hub(
+    session: "AsyncSession" = SESSION_DEP,
+    ctx: OrganizationContext = ORG_ADMIN_DEP,
+) -> list[AgentHubGatewayRead]:
+    """Return agents grouped by gateway with task counts for the Agent Hub."""
+    service = AgentLifecycleService(session)
+    # Fetch all agents for this org
+    all_agents_page = await service.list_agents(board_id=None, gateway_id=None, ctx=ctx)
+    agents: list[AgentRead] = list(all_agents_page.items)
+
+    if not agents:
+        return []
+
+    # Collect all gateway IDs
+    gateway_ids = list({a.gateway_id for a in agents})
+
+    # Fetch gateway names
+    gateway_rows = list(
+        await session.exec(
+            select(Gateway.id, Gateway.name).where(col(Gateway.id).in_(gateway_ids))
+        )
+    )
+    gateway_name_map: dict[UUID, str] = {row[0]: row[1] for row in gateway_rows}
+
+    # Fetch task counts per agent (done and active)
+    agent_ids = [a.id for a in agents]
+    done_rows = list(
+        await session.exec(
+            select(Task.agent_id, sa_func.count().label("cnt"))
+            .where(col(Task.agent_id).in_(agent_ids))
+            .where(col(Task.status) == "done")
+            .group_by(col(Task.agent_id))
+        )
+    )
+    active_rows = list(
+        await session.exec(
+            select(Task.agent_id, sa_func.count().label("cnt"))
+            .where(col(Task.agent_id).in_(agent_ids))
+            .where(col(Task.status) == "in_progress")
+            .group_by(col(Task.agent_id))
+        )
+    )
+    done_map: dict[UUID, int] = {row[0]: int(row[1]) for row in done_rows if row[0]}
+    active_map: dict[UUID, int] = {row[0]: int(row[1]) for row in active_rows if row[0]}
+
+    # Group agents by gateway
+    gateway_agents: dict[UUID, list[AgentRead]] = {}
+    for agent in agents:
+        gateway_agents.setdefault(agent.gateway_id, []).append(agent)
+
+    result: list[AgentHubGatewayRead] = []
+    for gw_id, gw_agents in gateway_agents.items():
+        total_done = sum(done_map.get(a.id, 0) for a in gw_agents)
+        total_active = sum(active_map.get(a.id, 0) for a in gw_agents)
+        result.append(
+            AgentHubGatewayRead(
+                gateway_id=gw_id,
+                gateway_name=gateway_name_map.get(gw_id, str(gw_id)),
+                total_tasks_done=total_done,
+                total_tasks_active=total_active,
+                agents=gw_agents,
+            )
+        )
+
+    return sorted(result, key=lambda g: g.gateway_name)
 
 
 @router.get("/{agent_id}", response_model=AgentRead)
