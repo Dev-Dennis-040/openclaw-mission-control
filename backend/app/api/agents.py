@@ -117,18 +117,21 @@ async def list_agents_hub(
     ctx: OrganizationContext = ORG_ADMIN_DEP,
 ) -> list[AgentHubGatewayRead]:
     """Return agents grouped by gateway with task counts for the Agent Hub."""
-    service = AgentLifecycleService(session)
-    # Fetch all agents for this org
-    all_agents_page = await service.list_agents(board_id=None, gateway_id=None, ctx=ctx)
-    agents: list[AgentRead] = list(all_agents_page.items)
+    from app.schemas.agents import AgentRead as _AgentRead
 
-    if not agents:
+    # Fetch all agents for this org directly (avoid paginate context requirement)
+    agent_rows = list(
+        await session.exec(
+            select(Agent).where(col(Agent.organization_id) == ctx.member.organization_id)
+        )
+    )
+    if not agent_rows:
         return []
 
-    # Collect all gateway IDs
-    gateway_ids = list({a.gateway_id for a in agents})
+    agents: list[_AgentRead] = [_AgentRead.model_validate(a) for a in agent_rows]
 
-    # Fetch gateway names
+    # Collect gateway IDs and fetch names
+    gateway_ids = list({a.gateway_id for a in agents})
     gateway_rows = list(
         await session.exec(
             select(Gateway.id, Gateway.name).where(col(Gateway.id).in_(gateway_ids))
@@ -136,7 +139,7 @@ async def list_agents_hub(
     )
     gateway_name_map: dict[UUID, str] = {row[0]: row[1] for row in gateway_rows}
 
-    # Fetch task counts per agent (done and active)
+    # Fetch task counts per agent
     agent_ids = [a.id for a in agents]
     done_rows = list(
         await session.exec(
@@ -158,7 +161,7 @@ async def list_agents_hub(
     active_map: dict[UUID, int] = {row[0]: int(row[1]) for row in active_rows if row[0]}
 
     # Group agents by gateway
-    gateway_agents: dict[UUID, list[AgentRead]] = {}
+    gateway_agents: dict[UUID, list[_AgentRead]] = {}
     for agent in agents:
         gateway_agents.setdefault(agent.gateway_id, []).append(agent)
 
