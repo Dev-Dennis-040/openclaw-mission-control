@@ -120,9 +120,12 @@ async def list_agents_hub(
     from app.schemas.agents import AgentRead as _AgentRead
 
     # Fetch all agents for this org directly (avoid paginate context requirement)
+    # Agent has no organization_id — filter via gateway join
     agent_rows = list(
         await session.exec(
-            select(Agent).where(col(Agent.organization_id) == ctx.member.organization_id)
+            select(Agent)
+            .join(Gateway, col(Agent.gateway_id) == col(Gateway.id))
+            .where(col(Gateway.organization_id) == ctx.member.organization_id)
         )
     )
     if not agent_rows:
