@@ -300,13 +300,25 @@ class AgentHeartbeatCreate(AgentHeartbeat):
     )
 
 
+class AgentActivityItem(SQLModel):
+    """Single activity event item for display in the hub."""
+
+    event_type: str
+    message: str | None = None
+    agent_name: str | None = None
+    created_at: datetime
+
+
 class AgentHubGatewayRead(SQLModel):
     """Grouped agents-per-gateway payload for the Agent Hub overview."""
 
     gateway_id: UUID
     gateway_name: str
+    gateway_url: str = ""
     total_tasks_done: int = 0
     total_tasks_active: int = 0
+    gateway_skills: list[str] = Field(default_factory=list)
+    recent_activity: list[AgentActivityItem] = Field(default_factory=list)
     agents: list["AgentRead"] = Field(default_factory=list)
 
 

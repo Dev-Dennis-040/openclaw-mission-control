@@ -15,7 +15,7 @@ export default function AgentsPage() {
   const router = useRouter();
   const { isAdmin } = useOrganizationMembership(isSignedIn);
 
-  const { data: gateways = [], isLoading } = useAgentsHub();
+  const { data: gateways = [], isLoading, refetch } = useAgentsHub();
 
   const totalAgents = gateways.reduce((s, g) => s + g.agents.length, 0);
 
@@ -35,7 +35,11 @@ export default function AgentsPage() {
       adminOnlyMessage="Only organization owners and admins can access agents."
       stickyHeader
     >
-      <AgentHubView gateways={gateways} isLoading={isLoading} />
+      <AgentHubView
+        gateways={gateways}
+        isLoading={isLoading}
+        onRefresh={() => void refetch()}
+      />
     </DashboardPageLayout>
   );
 }

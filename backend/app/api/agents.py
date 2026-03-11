@@ -116,11 +116,12 @@ async def list_agents_hub(
     session: "AsyncSession" = SESSION_DEP,
     ctx: OrganizationContext = ORG_ADMIN_DEP,
 ) -> list[AgentHubGatewayRead]:
-    """Return agents grouped by gateway with task counts for the Agent Hub."""
-    from app.schemas.agents import AgentRead as _AgentRead
+    """Return agents grouped by gateway with task counts, skills, and activity for the Agent Hub."""
+    from app.models.activity_events import ActivityEvent
+    from app.models.skills import GatewayInstalledSkill, MarketplaceSkill
+    from app.schemas.agents import AgentActivityItem, AgentRead as _AgentRead
 
-    # Fetch all agents for this org directly (avoid paginate context requirement)
-    # Agent has no organization_id — filter via gateway join
+    # 1. Fetch all agents for this org (Agent has no org_id — join via Gateway)
     agent_rows = list(
         await session.exec(
             select(Agent)
@@ -132,18 +133,21 @@ async def list_agents_hub(
         return []
 
     agents: list[_AgentRead] = [_AgentRead.model_validate(a) for a in agent_rows]
+    agent_ids = [a.id for a in agents]
 
-    # Collect gateway IDs and fetch names
+    # 2. Fetch gateway metadata (name + url)
     gateway_ids = list({a.gateway_id for a in agents})
-    gateway_rows = list(
+    gateway_meta_rows = list(
         await session.exec(
-            select(Gateway.id, Gateway.name).where(col(Gateway.id).in_(gateway_ids))
+            select(Gateway.id, Gateway.name, Gateway.url).where(
+                col(Gateway.id).in_(gateway_ids)
+            )
         )
     )
-    gateway_name_map: dict[UUID, str] = {row[0]: row[1] for row in gateway_rows}
+    gateway_name_map: dict[UUID, str] = {row[0]: row[1] for row in gateway_meta_rows}
+    gateway_url_map: dict[UUID, str] = {row[0]: row[2] for row in gateway_meta_rows}
 
-    # Fetch task counts per agent
-    agent_ids = [a.id for a in agents]
+    # 3. Task counts per agent (done / active)
     done_rows = list(
         await session.exec(
             select(Task.assigned_agent_id, sa_func.count().label("cnt"))
@@ -163,21 +167,67 @@ async def list_agents_hub(
     done_map: dict[UUID, int] = {row[0]: int(row[1]) for row in done_rows if row[0]}
     active_map: dict[UUID, int] = {row[0]: int(row[1]) for row in active_rows if row[0]}
 
-    # Group agents by gateway
+    # 4. Skills per gateway (join GatewayInstalledSkill → MarketplaceSkill)
+    skill_rows = list(
+        await session.exec(
+            select(GatewayInstalledSkill.gateway_id, MarketplaceSkill.name)
+            .join(
+                MarketplaceSkill,
+                col(GatewayInstalledSkill.skill_id) == col(MarketplaceSkill.id),
+            )
+            .where(col(GatewayInstalledSkill.gateway_id).in_(gateway_ids))
+        )
+    )
+    gateway_skills_map: dict[UUID, list[str]] = {}
+    for gw_id, skill_name in skill_rows:
+        gateway_skills_map.setdefault(gw_id, []).append(skill_name)
+
+    # 5. Recent activity events (last 5 per gateway, via agent_id membership)
+    activity_rows = list(
+        await session.exec(
+            select(ActivityEvent)
+            .where(col(ActivityEvent.agent_id).in_(agent_ids))
+            .order_by(col(ActivityEvent.created_at).desc())
+            .limit(50)
+        )
+    )
+    agent_name_map: dict[UUID, str] = {a.id: a.name for a in agents}
+    # group by gateway via agent_id → gateway_id lookup
+    agent_gw_map: dict[UUID, UUID] = {a.id: a.gateway_id for a in agents}
+    gw_activity_map: dict[UUID, list] = {}
+    for ev in activity_rows:
+        if ev.agent_id is None:
+            continue
+        gw_id = agent_gw_map.get(ev.agent_id)
+        if gw_id is None:
+            continue
+        lst = gw_activity_map.setdefault(gw_id, [])
+        if len(lst) < 5:
+            lst.append(
+                AgentActivityItem(
+                    event_type=ev.event_type,
+                    message=ev.message,
+                    agent_name=agent_name_map.get(ev.agent_id),
+                    created_at=ev.created_at,
+                )
+            )
+
+    # 6. Group and assemble result
     gateway_agents: dict[UUID, list[_AgentRead]] = {}
     for agent in agents:
         gateway_agents.setdefault(agent.gateway_id, []).append(agent)
 
     result: list[AgentHubGatewayRead] = []
     for gw_id, gw_agents in gateway_agents.items():
-        total_done = sum(done_map.get(a.id, 0) for a in gw_agents)
-        total_active = sum(active_map.get(a.id, 0) for a in gw_agents)
         result.append(
             AgentHubGatewayRead(
                 gateway_id=gw_id,
                 gateway_name=gateway_name_map.get(gw_id, str(gw_id)),
-                total_tasks_done=total_done,
-                total_tasks_active=total_active,
+                gateway_url=gateway_url_map.get(gw_id, ""),
+                total_tasks_done=sum(done_map.get(a.id, 0) for a in gw_agents),
+                total_tasks_active=sum(active_map.get(a.id, 0) for a in gw_agents),
+                gateway_skills=gateway_skills_map.get(gw_id, []),
+                recent_activity=gw_activity_map.get(gw_id, []),
                 agents=gw_agents,
             )
         )
