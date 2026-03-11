@@ -1,7 +1,5 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import { nl } from "date-fns/locale";
 import { useState } from "react";
 
 import type { AgentHubGatewayRead, AgentRead } from "@/api/generated/model";
@@ -52,6 +50,17 @@ function SkillPills({ skills }: { skills: string[] }) {
   );
 }
 
+function relativeTime(isoDate: string): string {
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 2) return "zojuist";
+  if (diffMin < 60) return `${diffMin} min geleden`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}u geleden`;
+  const diffD = Math.floor(diffH / 24);
+  return `${diffD}d geleden`;
+}
+
 function AgentRow({ agent }: { agent: AgentRead }) {
   const skills = agent.installed_skills ?? [];
   return (
@@ -77,12 +86,7 @@ function AgentRow({ agent }: { agent: AgentRead }) {
       {/* Last seen */}
       <div className="flex-shrink-0 text-right">
         <p className="text-[11px] text-slate-400">
-          {agent.last_seen_at
-            ? formatDistanceToNow(new Date(agent.last_seen_at), {
-                addSuffix: true,
-                locale: nl,
-              })
-            : "—"}
+          {agent.last_seen_at ? relativeTime(agent.last_seen_at) : "—"}
         </p>
         <p className="text-[11px] text-slate-400 capitalize">{agent.status}</p>
       </div>
