@@ -37,6 +37,8 @@ type IdentityProfile = {
   role: string;
   communication_style: string;
   emoji: string;
+  provider?: string;
+  model?: string;
 };
 
 const EMOJI_OPTIONS = [
@@ -71,6 +73,8 @@ const mergeIdentityProfile = (
     communication_style: patch.communication_style.trim(),
     emoji: patch.emoji.trim(),
   };
+  if (patch.provider !== undefined) updates.provider = patch.provider.trim();
+  if (patch.model !== undefined) updates.model = patch.model.trim();
   for (const [key, value] of Object.entries(updates)) {
     if (value) {
       resolved[key] = value;
@@ -89,6 +93,8 @@ const withIdentityDefaults = (
     profile?.communication_style ??
     DEFAULT_IDENTITY_PROFILE.communication_style,
   emoji: profile?.emoji ?? DEFAULT_IDENTITY_PROFILE.emoji,
+  provider: profile?.provider ?? "",
+  model: profile?.model ?? "",
 });
 
 export default function EditAgentPage() {
@@ -109,6 +115,12 @@ export default function EditAgentPage() {
   const [identityProfile, setIdentityProfile] = useState<
     IdentityProfile | undefined
   >(undefined);
+  const [identityTemplate, setIdentityTemplate] = useState<string | undefined>(
+    undefined,
+  );
+  const [soulTemplate, setSoulTemplate] = useState<string | undefined>(
+    undefined,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const boardsQuery = useListBoardsApiV1BoardsGet<
@@ -176,10 +188,16 @@ export default function EditAgentPage() {
             ? record.communication_style
             : undefined,
         emoji: typeof record.emoji === "string" ? record.emoji : undefined,
+        provider:
+          typeof record.provider === "string" ? record.provider : undefined,
+        model: typeof record.model === "string" ? record.model : undefined,
       });
     }
     return withIdentityDefaults(null);
   }, [loadedAgent?.identity_profile]);
+
+  const loadedIdentityTemplate = loadedAgent?.identity_template ?? "";
+  const loadedSoulTemplate = loadedAgent?.soul_template ?? "";
 
   const isLoading =
     boardsQuery.isLoading || agentQuery.isLoading || updateMutation.isPending;
@@ -191,6 +209,8 @@ export default function EditAgentPage() {
     isGatewayMain ?? Boolean(loadedAgent?.is_gateway_main);
   const resolvedHeartbeatEvery = heartbeatEvery ?? loadedHeartbeat.every;
   const resolvedIdentityProfile = identityProfile ?? loadedIdentityProfile;
+  const resolvedIdentityTemplate = identityTemplate ?? loadedIdentityTemplate;
+  const resolvedSoulTemplate = soulTemplate ?? loadedSoulTemplate;
 
   const resolvedBoardId = useMemo(() => {
     if (resolvedIsGatewayMain) return boardId ?? "";
@@ -244,6 +264,22 @@ export default function EditAgentPage() {
         resolvedIdentityProfile,
       ) as unknown as Record<string, unknown> | null,
     };
+
+    const trimmedIdentityTemplate = resolvedIdentityTemplate.trim();
+    if (trimmedIdentityTemplate) {
+      payload.identity_template = trimmedIdentityTemplate;
+    } else if (loadedAgent.identity_template) {
+      // Allow clearing if previously set
+      payload.identity_template = "";
+    }
+
+    const trimmedSoulTemplate = resolvedSoulTemplate.trim();
+    if (trimmedSoulTemplate) {
+      payload.soul_template = trimmedSoulTemplate;
+    } else if (loadedAgent.soul_template) {
+      payload.soul_template = "";
+    }
+
     if (!resolvedIsGatewayMain) {
       payload.board_id = resolvedBoardId || null;
     } else if (resolvedBoardId) {
@@ -430,6 +466,78 @@ export default function EditAgentPage() {
                 }
                 disabled={isLoading}
               />
+            </div>
+          </div>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Provider
+              </label>
+              <Input
+                value={resolvedIdentityProfile.provider}
+                onChange={(event) =>
+                  setIdentityProfile({
+                    ...resolvedIdentityProfile,
+                    provider: event.target.value,
+                  })
+                }
+                placeholder="e.g. openai, anthropic"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Model
+              </label>
+              <Input
+                value={resolvedIdentityProfile.model}
+                onChange={(event) =>
+                  setIdentityProfile({
+                    ...resolvedIdentityProfile,
+                    model: event.target.value,
+                  })
+                }
+                placeholder="e.g. gpt-4o, claude-3-5-sonnet-20241022"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            System Prompts & Templates
+          </p>
+          <div className="mt-4 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Identity Template (System Prompt)
+              </label>
+              <textarea
+                value={resolvedIdentityTemplate}
+                onChange={(event) => setIdentityTemplate(event.target.value)}
+                placeholder="You are a helpful assistant..."
+                disabled={isLoading}
+                className="w-full min-h-[120px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+              />
+              <p className="text-xs text-slate-500">
+                Defines the core persona and objective of the agent. Rendered into IDENTITY.md.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Soul Template (Deep Instructions)
+              </label>
+              <textarea
+                value={resolvedSoulTemplate}
+                onChange={(event) => setSoulTemplate(event.target.value)}
+                placeholder="When you encounter an error..."
+                disabled={isLoading}
+                className="w-full min-h-[120px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+              />
+              <p className="text-xs text-slate-500">
+                Hard constraints or behavioral instructions. Usually loaded as the initial instructions for the agent loop.
+              </p>
             </div>
           </div>
         </div>
