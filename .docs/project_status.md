@@ -13,3 +13,8 @@
 - [x] Onderzoek hoe we OpenClaw Gateways in Mission Control registreren (API vs UI).
 - [x] API keys per gateway verzamelen.
 - [x] Gateways in Mission Control aanmaken en verbinding testen (Afgewerkt via intern VPS netwerk).
+
+## 2026-03-16 Update
+- Fixed downtime issue: `mc.devdennis.com` was returning a 404 because the `mission-control` container pulling from ghcr.io was stopped.
+- Added identity_template, soul_template, provider, and model configurations to the Agent Edit form frontend.
+- Routed Traefik proxy traffic to the source code container (`mission-control-src`) instead of the pre-built Github image so that custom repository modifications go live immediately.
