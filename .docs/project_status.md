@@ -18,3 +18,4 @@
 - Fixed downtime issue: `mc.devdennis.com` was returning a 404 because the `mission-control` container pulling from ghcr.io was stopped.
 - Added identity_template, soul_template, provider, and model configurations to the Agent Edit form frontend.
 - Routed Traefik proxy traffic to the source code container (`mission-control-src`) instead of the pre-built Github image so that custom repository modifications go live immediately.
+- Added automation scripts to the VPS (`/root/openclaw-saas/instances/update-gateways.sh` and `update-mission-control.sh`) to effortlessly update `.env` versions, download new images, and restart containers without manual intervention.
