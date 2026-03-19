@@ -39,7 +39,10 @@ export const customFetch = async <T>(
   url: string,
   options: RequestInit,
 ): Promise<T> => {
-  const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+  let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
+    rawBaseUrl = process.env.INTERNAL_API_URL;
+  }
   if (!rawBaseUrl) {
     throw new Error("NEXT_PUBLIC_API_URL is not set.");
   }

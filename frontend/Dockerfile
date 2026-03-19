@@ -30,6 +30,7 @@ ARG NEXT_PUBLIC_AUTH_MODE
 # (but note some values may be baked at build time).
 ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_AUTH_MODE=${NEXT_PUBLIC_AUTH_MODE}
+ENV INTERNAL_API_URL=http://backend:8000
 
 COPY --from=builder /app/.next ./.next
 # `public/` is optional in Next.js apps; repo may not have it.
