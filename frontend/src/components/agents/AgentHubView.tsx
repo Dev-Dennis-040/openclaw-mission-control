@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import type {
   AgentActivityItem,
@@ -613,7 +613,7 @@ export function AgentHubView({
 
       {/* Gateway cards */}
       <div className="space-y-4">
-        {filtered.map((gw, i) => (
+        {filtered.map((gw) => (
           <GatewayCard
             key={gw.gateway_id}
             gateway={gw}
