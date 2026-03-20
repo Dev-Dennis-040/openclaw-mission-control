@@ -51,3 +51,73 @@ Promote patterns to:
 
 If you change this file, tell the user. But prefer to evolve in MEMORY.md.
 `;
+
+export const PROVIDER_OPTIONS = [
+  { value: "openrouter", label: "OpenRouter" },
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "google", label: "Google" },
+  { value: "groq", label: "Groq" },
+  { value: "ollama", label: "Ollama" },
+  { value: "azure", label: "Azure" },
+];
+
+export const MODEL_OPTIONS_MAP: Record<string, { value: string; label: string }[]> = {
+  openrouter: [
+    { value: "google/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
+    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "google/gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+    { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+    { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
+    { value: "openai/gpt-4o", label: "GPT-4o" },
+    { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
+    { value: "openai/o1-mini", label: "o1 Mini" },
+    { value: "openai/o3-mini", label: "o3 Mini" },
+    { value: "deepseek/deepseek-chat", label: "DeepSeek V3" },
+    { value: "deepseek/deepseek-r1", label: "DeepSeek R1" },
+    { value: "meta-llama/llama-3.1-8b-instruct", label: "Llama 3.1 8B" },
+    { value: "meta-llama/llama-3.1-70b-instruct", label: "Llama 3.1 70B" },
+    { value: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
+    { value: "x-ai/grok-2-1212", label: "Grok 2" },
+    { value: "mistralai/mistral-large-2411", label: "Mistral Large" },
+    { value: "qwen/qwen-2.5-72b-instruct", label: "Qwen 2.5 72B" }
+  ],
+  openai: [
+    { value: "gpt-4o", label: "GPT-4o" },
+    { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+    { value: "o1-mini", label: "o1 Mini" },
+    { value: "o3-mini", label: "o3 Mini" },
+  ],
+  anthropic: [
+    { value: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet" },
+    { value: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku" },
+    { value: "claude-3-opus-latest", label: "Claude 3 Opus" },
+  ],
+  google: [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+    { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+  ],
+  groq: [
+    { value: "llama3-8b-8192", label: "Llama 3 8B" },
+    { value: "llama3-70b-8192", label: "Llama 3 70B" },
+    { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+    { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B" },
+  ],
+  ollama: [
+    { value: "llama3", label: "Llama 3" },
+    { value: "mistral", label: "Mistral" },
+    { value: "qwen", label: "Qwen" },
+  ],
+  azure: [
+    { value: "gpt-4o", label: "GPT-4o" },
+    { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+  ]
+};
+
+export const getModelsForProvider = (provider?: string) => {
+  if (!provider) return MODEL_OPTIONS_MAP["openrouter"] || [];
+  return MODEL_OPTIONS_MAP[provider] || [];
+};

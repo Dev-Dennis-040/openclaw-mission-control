@@ -31,7 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
+import {
+  DEFAULT_IDENTITY_PROFILE,
+  PROVIDER_OPTIONS,
+  getModelsForProvider,
+} from "@/lib/agent-templates";
 
 type IdentityProfile = {
   role: string;
@@ -473,32 +477,50 @@ export default function EditAgentPage() {
               <label className="text-sm font-medium text-slate-900">
                 Provider
               </label>
-              <Input
-                value={resolvedIdentityProfile.provider}
-                onChange={(event) =>
+              <Select
+                value={resolvedIdentityProfile.provider || ""}
+                onValueChange={(value) =>
                   setIdentityProfile({
                     ...resolvedIdentityProfile,
-                    provider: event.target.value,
+                    provider: value,
+                    model: "",
                   })
                 }
-                placeholder="e.g. openai, anthropic"
                 disabled={isLoading}
-              />
+              >
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Select a provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDER_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-900">
                 Model
               </label>
-              <Input
-                value={resolvedIdentityProfile.model}
-                onChange={(event) =>
+              <SearchableSelect
+                ariaLabel="Select model"
+                value={resolvedIdentityProfile.model || ""}
+                onValueChange={(value) =>
                   setIdentityProfile({
                     ...resolvedIdentityProfile,
-                    model: event.target.value,
+                    model: value,
                   })
                 }
-                placeholder="e.g. gpt-4o, claude-3-5-sonnet-20241022"
-                disabled={isLoading}
+                options={getModelsForProvider(resolvedIdentityProfile.provider)}
+                placeholder={resolvedIdentityProfile.provider ? "Select a model" : "Select a provider first"}
+                searchPlaceholder="Search models..."
+                emptyMessage="No models found."
+                triggerClassName="w-full h-11 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                contentClassName="rounded-xl border-2 border-slate-200 shadow-lg"
+                itemClassName="px-4 py-3 text-sm text-slate-700 data-[selected=true]:bg-slate-50 data-[selected=true]:text-slate-900 data-[selected=true]:font-semibold"
+                disabled={isLoading || !resolvedIdentityProfile.provider}
               />
             </div>
           </div>
