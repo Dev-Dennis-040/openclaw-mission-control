@@ -71,6 +71,15 @@ services:
     extra_hosts:
       - "mc.devdennis.com:host-gateway"
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mission-control.rule=Host(`mc.devdennis.com`)"
+      - "traefik.http.routers.mission-control.entrypoints=websecure"
+      - "traefik.http.routers.mission-control.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.mission-control.loadbalancer.server.port=3000"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
 
@@ -98,3 +107,8 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+  traefik-net:
+    external: true
