@@ -95,6 +95,8 @@ export const MODEL_OPTIONS_MAP: Record<string, { value: string; label: string }[
     { value: "claude-3-opus-latest", label: "Claude 3 Opus" },
   ],
   google: [
+    { value: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
+    { value: "google/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite (OpenRouter notation)" },
     { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
     { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
     { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
