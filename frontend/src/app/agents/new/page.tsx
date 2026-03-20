@@ -34,6 +34,8 @@ type IdentityProfile = {
   role: string;
   communication_style: string;
   emoji: string;
+  provider?: string;
+  model?: string;
 };
 
 const EMOJI_OPTIONS = [
@@ -63,6 +65,9 @@ const normalizeIdentityProfile = (
     communication_style: profile.communication_style.trim(),
     emoji: profile.emoji.trim(),
   };
+  if (profile.provider) normalized.provider = profile.provider.trim();
+  if (profile.model) normalized.model = profile.model.trim();
+
   const hasValue = Object.values(normalized).some((value) => value.length > 0);
   return hasValue ? normalized : null;
 };
@@ -261,6 +266,40 @@ export default function NewAgentPage() {
                     communication_style: event.target.value,
                   }))
                 }
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Provider
+              </label>
+              <Input
+                value={identityProfile.provider || ""}
+                onChange={(event) =>
+                  setIdentityProfile((current) => ({
+                    ...current,
+                    provider: event.target.value,
+                  }))
+                }
+                placeholder="e.g. openai, anthropic"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Model
+              </label>
+              <Input
+                value={identityProfile.model || ""}
+                onChange={(event) =>
+                  setIdentityProfile((current) => ({
+                    ...current,
+                    model: event.target.value,
+                  }))
+                }
+                placeholder="e.g. gpt-4o, claude-3-5-sonnet-20241022"
                 disabled={isLoading}
               />
             </div>

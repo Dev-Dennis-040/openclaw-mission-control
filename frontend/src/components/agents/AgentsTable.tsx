@@ -142,6 +142,30 @@ export function AgentsTable({
         },
       },
       {
+        id: "llm_model",
+        header: "LLM Model",
+        cell: ({ row }) => {
+          const profile = row.original.identity_profile as Record<string, unknown> | undefined;
+          const provider = typeof profile?.provider === "string" ? profile.provider : undefined;
+          const model = typeof profile?.model === "string" ? profile.model : undefined;
+          
+          if (!provider && !model) {
+            return <span className="text-sm text-slate-400">—</span>;
+          }
+          
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-semibold text-slate-700 capitalize">
+                {provider || "Default"}
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono tracking-tight truncate max-w-[120px]" title={model}>
+                {model || "default-model"}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "last_seen_at",
         header: "Last seen",
         cell: ({ row }) =>

@@ -19,3 +19,8 @@
 - Added identity_template, soul_template, provider, and model configurations to the Agent Edit form frontend.
 - Routed Traefik proxy traffic to the source code container (`mission-control-src`) instead of the pre-built Github image so that custom repository modifications go live immediately.
 - Added automation scripts to the VPS (`/root/openclaw-saas/instances/update-gateways.sh` and `update-mission-control.sh`) to effortlessly update `.env` versions, download new images, and restart containers without manual intervention.
+
+## 2026-03-18 Update
+- **Billing Security Fix**: Identified and resolved a massive billing issue (e.g. Google Cloud Vertex AI / OpenAI) caused by background agents stuck in an infinite `MEMORY.md` token loop.
+- **Enforced Prepaid Usage**: Removed all `OPENAI_API_KEY` and `GEMINI_API_KEY` values from all OpenClaw instances (`zakelijk`, `prive`, `tess`) on the VPS. This forces Mission Control and all agents to gracefully fail on OpenRouter's prepaid model (`OPENROUTER_API_KEY`) if funds run out, entirely preventing unexpected €100+ end-of-month backend provider bills.
+- **Corrupted Memory Cleared**: Emptied corrupted `/data/MEMORY.md` files for stuck agents to break active processing loops and restarted their respective containers.
