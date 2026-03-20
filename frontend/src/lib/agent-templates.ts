@@ -2,6 +2,8 @@ export const DEFAULT_IDENTITY_PROFILE = {
   role: "Generalist",
   communication_style: "direct, concise, practical",
   emoji: ":gear:",
+  provider: "google",
+  model: "gemini-3.1-flash-lite",
 };
 
 export const DEFAULT_SOUL_TEMPLATE = `# SOUL.md
