@@ -37,6 +37,14 @@ class Agent(QueryModel, table=True):
     )
     identity_template: str | None = Field(default=None, sa_column=Column(Text))
     soul_template: str | None = Field(default=None, sa_column=Column(Text))
+    channels_config: dict[str, Any] | None = Field(
+        default=None,
+        sa_column=Column(JSON),
+    )
+    cronjobs_config: list[dict[str, Any]] | None = Field(
+        default=None,
+        sa_column=Column(JSON),
+    )
     provision_requested_at: datetime | None = Field(default=None)
     provision_confirm_token_hash: str | None = Field(default=None, index=True)
     provision_action: str | None = Field(default=None, index=True)

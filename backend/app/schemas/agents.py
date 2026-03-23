@@ -101,6 +101,16 @@ class AgentBase(SQLModel):
         description="Template representing deeper agent instructions.",
         examples=["When critical blockers appear, escalate in plain language."],
     )
+    channels_config: dict[str, Any] | None = Field(
+        default=None,
+        description="Configuration for communication channels like Telegram or Discord.",
+        examples=[{"telegram": {"enabled": True, "token": "..."}}],
+    )
+    cronjobs_config: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="List of automated tasks/cronjobs for the agent.",
+        examples=[[{"pattern": "0 8 * * *", "message": "Good morning"}]],
+    )
 
     @field_validator("identity_template", "soul_template", mode="before")
     @classmethod
@@ -189,6 +199,16 @@ class AgentUpdate(SQLModel):
         default=None,
         description="Optional replacement soul template.",
         examples=["Escalate only after checking all known mitigations."],
+    )
+    channels_config: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional replacement channels configuration.",
+        examples=[{"telegram": {"enabled": True, "token": "..."}}],
+    )
+    cronjobs_config: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional replacement cronjobs configuration.",
+        examples=[[{"pattern": "0 8 * * *", "message": "Good morning"}]],
     )
 
     @field_validator("identity_template", "soul_template", mode="before")

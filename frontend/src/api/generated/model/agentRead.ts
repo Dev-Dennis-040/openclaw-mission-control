@@ -28,6 +28,10 @@ export interface AgentRead {
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */
   soul_template?: string | null;
+  /** Configuration for communication channels like Telegram or Discord. */
+  channels_config?: {[key: string]: unknown} | null;
+  /** List of automated tasks/cronjobs for the agent. */
+  cronjobs_config?: {[key: string]: unknown}[] | null;
   /** Agent UUID. */
   id: string;
   /** Gateway UUID that manages this agent. */

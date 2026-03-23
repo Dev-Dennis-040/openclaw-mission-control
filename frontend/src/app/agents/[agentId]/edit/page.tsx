@@ -125,6 +125,12 @@ export default function EditAgentPage() {
   const [soulTemplate, setSoulTemplate] = useState<string | undefined>(
     undefined,
   );
+  const [channelsConfigStr, setChannelsConfigStr] = useState<string | undefined>(
+    undefined,
+  );
+  const [cronjobsConfigStr, setCronjobsConfigStr] = useState<string | undefined>(
+    undefined,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const boardsQuery = useListBoardsApiV1BoardsGet<
@@ -203,6 +209,16 @@ export default function EditAgentPage() {
   const loadedIdentityTemplate = loadedAgent?.identity_template ?? "";
   const loadedSoulTemplate = loadedAgent?.soul_template ?? "";
 
+  const loadedChannelsConfigStr = useMemo(() => {
+    if (!loadedAgent?.channels_config) return "";
+    return JSON.stringify(loadedAgent.channels_config, null, 2);
+  }, [loadedAgent?.channels_config]);
+
+  const loadedCronjobsConfigStr = useMemo(() => {
+    if (!loadedAgent?.cronjobs_config) return "";
+    return JSON.stringify(loadedAgent.cronjobs_config, null, 2);
+  }, [loadedAgent?.cronjobs_config]);
+
   const isLoading =
     boardsQuery.isLoading || agentQuery.isLoading || updateMutation.isPending;
   const errorMessage =
@@ -215,6 +231,8 @@ export default function EditAgentPage() {
   const resolvedIdentityProfile = identityProfile ?? loadedIdentityProfile;
   const resolvedIdentityTemplate = identityTemplate ?? loadedIdentityTemplate;
   const resolvedSoulTemplate = soulTemplate ?? loadedSoulTemplate;
+  const resolvedChannelsConfigStr = channelsConfigStr ?? loadedChannelsConfigStr;
+  const resolvedCronjobsConfigStr = cronjobsConfigStr ?? loadedCronjobsConfigStr;
 
   const resolvedBoardId = useMemo(() => {
     if (resolvedIsGatewayMain) return boardId ?? "";
@@ -244,6 +262,32 @@ export default function EditAgentPage() {
       );
       return;
     }
+
+    let channelsConfigParsed = null;
+    let cronjobsConfigParsed = null;
+
+    if (resolvedChannelsConfigStr.trim()) {
+      try {
+        channelsConfigParsed = JSON.parse(resolvedChannelsConfigStr);
+      } catch (err) {
+        setError("Invalid JSON in Channels Configuration.");
+        return;
+      }
+    }
+
+    if (resolvedCronjobsConfigStr.trim()) {
+      try {
+        cronjobsConfigParsed = JSON.parse(resolvedCronjobsConfigStr);
+        if (!Array.isArray(cronjobsConfigParsed)) {
+          setError("Cronjobs Configuration must be a JSON array.");
+          return;
+        }
+      } catch (err) {
+        setError("Invalid JSON in Cronjobs Configuration.");
+        return;
+      }
+    }
+
     setError(null);
 
     const existingHeartbeat =
@@ -267,6 +311,8 @@ export default function EditAgentPage() {
         loadedAgent.identity_profile,
         resolvedIdentityProfile,
       ) as unknown as Record<string, unknown> | null,
+      channels_config: channelsConfigParsed,
+      cronjobs_config: cronjobsConfigParsed as {[key: string]: unknown}[] | null,
     };
 
     const trimmedIdentityTemplate = resolvedIdentityTemplate.trim();
@@ -559,6 +605,44 @@ export default function EditAgentPage() {
               />
               <p className="text-xs text-slate-500">
                 Hard constraints or behavioral instructions. Usually loaded as the initial instructions for the agent loop.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Integrations & Automation
+          </p>
+          <div className="mt-4 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Channels Configuration (JSON)
+              </label>
+              <textarea
+                value={resolvedChannelsConfigStr}
+                onChange={(event) => setChannelsConfigStr(event.target.value)}
+                placeholder='{"telegram": {"token": "..."}}'
+                disabled={isLoading}
+                className="w-full font-mono min-h-[120px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+              />
+              <p className="text-xs text-slate-500">
+                JSON object for configuring communication channels (e.g., Telegram, Discord).
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Cronjobs Configuration (JSON Array)
+              </label>
+              <textarea
+                value={resolvedCronjobsConfigStr}
+                onChange={(event) => setCronjobsConfigStr(event.target.value)}
+                placeholder='[{"schedule": "0 8 * * *", "task": "Send daily update"}]'
+                disabled={isLoading}
+                className="w-full font-mono min-h-[120px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+              />
+              <p className="text-xs text-slate-500">
+                JSON array of automated tasks to be executed by this agent.
               </p>
             </div>
           </div>

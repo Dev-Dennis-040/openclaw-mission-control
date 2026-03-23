@@ -301,6 +301,34 @@ export default function AgentDetailPage() {
                   </div>
 
                   <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-quiet">
+                      Integrations & Automation
+                    </p>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-quiet">
+                          Channels
+                        </p>
+                        <p className="mt-1 text-sm text-strong">
+                          {agent.channels_config && Object.keys(agent.channels_config).length > 0
+                            ? Object.keys(agent.channels_config).join(", ")
+                            : "None configured"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-quiet">
+                          Cronjobs
+                        </p>
+                        <p className="mt-1 text-sm text-strong">
+                          {agent.cronjobs_config && agent.cronjobs_config.length > 0
+                            ? `${agent.cronjobs_config.length} scheduled task(s)`
+                            : "None configured"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-5">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-quiet">
                         Health

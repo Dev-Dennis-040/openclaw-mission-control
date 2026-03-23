@@ -27,4 +27,8 @@ export interface AgentUpdate {
   identity_template?: string | null;
   /** Optional replacement soul template. */
   soul_template?: string | null;
+  /** Optional replacement channels configuration. */
+  channels_config?: {[key: string]: unknown} | null;
+  /** Optional replacement cronjobs configuration. */
+  cronjobs_config?: {[key: string]: unknown}[] | null;
 }
