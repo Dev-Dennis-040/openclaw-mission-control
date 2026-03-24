@@ -41,6 +41,14 @@ class Agent(QueryModel, table=True):
         default=None,
         sa_column=Column(JSON),
     )
+    max_iterations: int | None = Field(
+        default=None,
+        description="Hard limit on iterations before forcing a stop due to loop cycles.",
+    )
+    token_budget: int | None = Field(
+        default=None,
+        description="Daily or per-session maximum token budget allowed.",
+    )
     cronjobs_config: list[dict[str, Any]] | None = Field(
         default=None,
         sa_column=Column(JSON),

@@ -23,6 +23,10 @@ export interface AgentUpdate {
   heartbeat_config?: AgentUpdateHeartbeatConfig;
   /** Optional identity profile update values. */
   identity_profile?: AgentUpdateIdentityProfile;
+  /** Optional replacement iteration limit. */
+  max_iterations?: number | null;
+  /** Optional replacement token usage boundary. */
+  token_budget?: number | null;
   /** Optional replacement identity template. */
   identity_template?: string | null;
   /** Optional replacement soul template. */

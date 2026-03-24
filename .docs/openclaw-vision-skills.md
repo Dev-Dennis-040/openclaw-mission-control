@@ -37,3 +37,26 @@ Voor de integratie van informatie van de basisschool (De Rietpluim) en de BSO (K
 Om de agents te upgraden hoeven we het wiel niet opnieuw uit te vinden.
 - Voordat we een agent (Max, Tess, Nova) een nieuwe functie willen geven op de browser of pc, checken we eerst de `awesome-openclaw-skills` repo.
 - We sturen aan op de native CDP integratie van de container zelf voor betrouwbare webacties, tenzij er een hardware/app-vergrendeling is (zoals bij Parentcom), waarvoor we e-mail forwarding of n8n webhooks inzetten.
+
+## 6. ClawTeam Integratie (Agent Swarm Intelligence)
+Naast de standaard OpenClaw browser- en CLI-skills, is het systeem nu uitgebreid met support voor de **HKUDS/ClawTeam** repository (Agent Swarm Intelligence). 
+- **Setup:** De `clawteam` applicatie is native geïnstalleerd via `pip install clawteam --break-system-packages` binnen de Docker containers van de agents (zoals `openclaw_prive` en `openclaw_zakelijk`).
+- **Dependencies:** De agents hebben de beschikking over `git` en `tmux` voor workspace isolatie op de achtergrond.
+- **Uitvoering:** Max en andere gespecificeerde OpenClaw agents hebben toegang tot de `execute-cli-skill`. Via een override in hun System Templates / Tools configuration in de database, zijn zij geïnstrueerd dat ze toegang hebben tot de CLI tool.
+- **Use-cases:** Dit stelt een individuele "Manager" agent in staat om via commando's (bijv. `clawteam spawn` of `clawteam launch`) zelfstanding, op de achtergrond, nieuwe sub-agents of heuse *virtual teams* en *committees* te initialiseren en aan te sturen. Alles wordt gecoördineerd via je eigen OpenClaw dashboard / chat interface.
+
+## 7. Use-Case: Autonomous SaaS Management (Oplevertool App)
+Om The Swarm / OpenClaw in te zetten als de proactieve Lead Developer & QA Tester voor je SaaS (Oplevertool), hanteren we een gestructureerde fundering. *Let op: de Oplevertool website/marketing repo is in het verleden al succesvol gekoppeld en voorzien van GitHub issues. De focus ligt nu 100% op de Oplevertool App zélf.*
+
+### De Fundering (Stap-voor-stap)
+1. **GitHub Koppeling & Workspace Setup**
+   - De AI-agent (Max/Sherlock) configureert de GitHub CLI (`gh`) lokaal op de VPS-workspace via een Personal Access Token (PAT).
+   - De Oplevertool App repository wordt lokaal gecloned. Hierdoor kan de agent via de command-line statische bestanden lezen (bijv. React/Next.js componenten) en de structuur doorgronden.
+2. **"Ogen" op de App (Live Auditing)**
+   - De agent krijgt een test-account voor de live app (`app.oplevertool.nl`).
+   - Via OpenClaw's native **Browser / CDP Skill** (of via Playwright in de terminal) logt de agent in op de live applicatie. De agent navigeert, klikt, zoekt naar verwarrende UX-flows, en leest console/DOM errors uit tijdens het gebruik.
+3. **Beheer & Optimalisatie via ClawTeam**
+   - Max spawnt een sub-team via de SDK (`clawteam spawn`).
+   - De *QA Tester Agent* analyseert de bevindingen uit de browser.
+   - De *Code Reviewer Agent* zoekt in de lokale GitHub codebase naar de oorzaak van de trage of onlogische flow.
+   - Het team genereert autonoom GitHub Issues via de `gh` cli in de Oplevertool App repo met labels zoals "bug" of "enhancement" inclusief aanbevelingen, zodat het menselijke dev-team (wij) hiermee aan de slag kan.

@@ -166,6 +166,24 @@ export function AgentsTable({
         },
       },
       {
+        accessorKey: "max_iterations",
+        header: "Max Iters",
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-500">
+            {row.original.max_iterations ?? "∞"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "token_budget",
+        header: "Budget",
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-500">
+            {row.original.token_budget ? row.original.token_budget.toLocaleString() : "∞"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "last_seen_at",
         header: "Last seen",
         cell: ({ row }) =>

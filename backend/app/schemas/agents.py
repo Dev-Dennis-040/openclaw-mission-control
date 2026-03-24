@@ -111,6 +111,16 @@ class AgentBase(SQLModel):
         description="List of automated tasks/cronjobs for the agent.",
         examples=[[{"pattern": "0 8 * * *", "message": "Good morning"}]],
     )
+    max_iterations: int | None = Field(
+        default=None,
+        description="Hard limit on iterations per task to avoid infinite billing loops.",
+        examples=[3],
+    )
+    token_budget: int | None = Field(
+        default=None,
+        description="Safety threshold for tokens consumed before forcing the agent to sleep.",
+        examples=[500000],
+    )
 
     @field_validator("identity_template", "soul_template", mode="before")
     @classmethod
@@ -209,6 +219,16 @@ class AgentUpdate(SQLModel):
         default=None,
         description="Optional replacement cronjobs configuration.",
         examples=[[{"pattern": "0 8 * * *", "message": "Good morning"}]],
+    )
+    max_iterations: int | None = Field(
+        default=None,
+        description="Optional override for iteration limit before forcing a stop.",
+        examples=[3],
+    )
+    token_budget: int | None = Field(
+        default=None,
+        description="Optional override for token limit safety threshold.",
+        examples=[500000],
     )
 
     @field_validator("identity_template", "soul_template", mode="before")

@@ -24,6 +24,10 @@ export interface AgentRead {
   heartbeat_config?: AgentReadHeartbeatConfig;
   /** Optional profile hints used by routing and policy checks. */
   identity_profile?: AgentReadIdentityProfile;
+  /** Iteration limit to prevent infinite loops. */
+  max_iterations?: number | null;
+  /** Token usage boundary to prevent infinite billing. */
+  token_budget?: number | null;
   /** Template that helps define initial intent and behavior. */
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */

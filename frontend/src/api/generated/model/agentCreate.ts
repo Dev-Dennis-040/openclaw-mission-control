@@ -24,6 +24,10 @@ export interface AgentCreate {
   heartbeat_config?: AgentCreateHeartbeatConfig;
   /** Optional profile hints used by routing and policy checks. */
   identity_profile?: AgentCreateIdentityProfile;
+  /** Iteration limit to prevent infinite loops. */
+  max_iterations?: number | null;
+  /** Token usage boundary to prevent infinite billing. */
+  token_budget?: number | null;
   /** Template that helps define initial intent and behavior. */
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */

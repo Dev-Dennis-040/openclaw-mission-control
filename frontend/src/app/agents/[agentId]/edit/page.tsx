@@ -113,6 +113,12 @@ export default function EditAgentPage() {
   const [isGatewayMain, setIsGatewayMain] = useState<boolean | undefined>(
     undefined,
   );
+  const [maxIterations, setMaxIterations] = useState<string | undefined>(
+    undefined,
+  );
+  const [tokenBudget, setTokenBudget] = useState<string | undefined>(
+    undefined,
+  );
   const [heartbeatEvery, setHeartbeatEvery] = useState<string | undefined>(
     undefined,
   );
@@ -227,6 +233,8 @@ export default function EditAgentPage() {
   const resolvedName = name ?? loadedAgent?.name ?? "";
   const resolvedIsGatewayMain =
     isGatewayMain ?? Boolean(loadedAgent?.is_gateway_main);
+  const resolvedMaxIterations = maxIterations ?? (loadedAgent?.max_iterations?.toString() || "");
+  const resolvedTokenBudget = tokenBudget ?? (loadedAgent?.token_budget?.toString() || "");
   const resolvedHeartbeatEvery = heartbeatEvery ?? loadedHeartbeat.every;
   const resolvedIdentityProfile = identityProfile ?? loadedIdentityProfile;
   const resolvedIdentityTemplate = identityTemplate ?? loadedIdentityTemplate;
@@ -298,6 +306,8 @@ export default function EditAgentPage() {
 
     const payload: AgentUpdate = {
       name: trimmed,
+      max_iterations: resolvedMaxIterations ? parseInt(resolvedMaxIterations, 10) : null,
+      token_budget: resolvedTokenBudget ? parseInt(resolvedTokenBudget, 10) : null,
       heartbeat_config: {
         ...existingHeartbeat,
         every: resolvedHeartbeatEvery.trim() || "10m",
@@ -652,7 +662,7 @@ export default function EditAgentPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Schedule & notifications
           </p>
-          <div className="mt-4">
+          <div className="mt-4 grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-900">
                 Interval
@@ -665,6 +675,40 @@ export default function EditAgentPage() {
               />
               <p className="text-xs text-slate-500">
                 Set how often this agent runs HEARTBEAT.md.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Max Iterations
+              </label>
+              <Input
+                type="number"
+                value={resolvedMaxIterations}
+                onChange={(event) => setMaxIterations(event.target.value)}
+                placeholder="e.g. 15"
+                disabled={isLoading}
+                min="1"
+              />
+              <p className="text-xs text-slate-500">
+                Maximum allowed tool call iterations per run before aborting.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Token Budget
+              </label>
+              <Input
+                type="number"
+                value={resolvedTokenBudget}
+                onChange={(event) => setTokenBudget(event.target.value)}
+                placeholder="e.g. 1000000"
+                disabled={isLoading}
+                min="1"
+              />
+              <p className="text-xs text-slate-500">
+                Maximum allowed tokens per run before aborting loop.
               </p>
             </div>
           </div>

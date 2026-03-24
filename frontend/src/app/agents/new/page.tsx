@@ -85,6 +85,8 @@ export default function NewAgentPage() {
   const [name, setName] = useState("");
   const [boardId, setBoardId] = useState<string>("");
   const [heartbeatEvery, setHeartbeatEvery] = useState("10m");
+  const [maxIterations, setMaxIterations] = useState<string>("");
+  const [tokenBudget, setTokenBudget] = useState<string>("");
   const [identityProfile, setIdentityProfile] = useState<IdentityProfile>({
     ...DEFAULT_IDENTITY_PROFILE,
   });
@@ -137,6 +139,8 @@ export default function NewAgentPage() {
       data: {
         name: trimmed,
         board_id: resolvedBoardId,
+        max_iterations: maxIterations ? parseInt(maxIterations, 10) : undefined,
+        token_budget: tokenBudget ? parseInt(tokenBudget, 10) : undefined,
         heartbeat_config: {
           every: heartbeatEvery.trim() || "10m",
           target: "last",
@@ -332,7 +336,7 @@ export default function NewAgentPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Schedule & notifications
           </p>
-          <div className="mt-4">
+          <div className="mt-4 grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-900">
                 Interval
@@ -345,6 +349,40 @@ export default function NewAgentPage() {
               />
               <p className="text-xs text-slate-500">
                 How often this agent runs HEARTBEAT.md (10m, 30m, 2h).
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Max Iterations
+              </label>
+              <Input
+                type="number"
+                value={maxIterations}
+                onChange={(event) => setMaxIterations(event.target.value)}
+                placeholder="e.g. 15"
+                disabled={isLoading}
+                min="1"
+              />
+              <p className="text-xs text-slate-500">
+                Maximum allowed tool call iterations per run before aborting.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Token Budget
+              </label>
+              <Input
+                type="number"
+                value={tokenBudget}
+                onChange={(event) => setTokenBudget(event.target.value)}
+                placeholder="e.g. 1000000"
+                disabled={isLoading}
+                min="1"
+              />
+              <p className="text-xs text-slate-500">
+                Maximum allowed tokens per run before aborting loop.
               </p>
             </div>
           </div>
