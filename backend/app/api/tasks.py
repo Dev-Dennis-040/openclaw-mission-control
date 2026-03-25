@@ -20,8 +20,8 @@ from app.api.deps import (
     get_board_for_actor_read,
     get_board_for_user_write,
     get_task_or_404,
-    require_admin_auth,
-    require_admin_or_agent,
+    require_user_auth,
+    require_user_or_agent,
 )
 from app.core.time import utcnow
 from app.db import crud
@@ -60,6 +60,7 @@ from app.services.mentions import extract_mentions, matches_agent_mention
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
 from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.openclaw.provisioning_db import AgentLifecycleService
 from app.services.organizations import require_board_access
 from app.services.tags import (
     TagState,
@@ -100,12 +101,12 @@ TASK_SNIPPET_MAX_LEN = 500
 TASK_SNIPPET_TRUNCATED_LEN = 497
 TASK_EVENT_ROW_LEN = 2
 BOARD_READ_DEP = Depends(get_board_for_actor_read)
-ACTOR_DEP = Depends(require_admin_or_agent)
+ACTOR_DEP = Depends(require_user_or_agent)
 SINCE_QUERY = Query(default=None)
 STATUS_QUERY = Query(default=None, alias="status")
 BOARD_WRITE_DEP = Depends(get_board_for_user_write)
 SESSION_DEP = Depends(get_session)
-ADMIN_AUTH_DEP = Depends(require_admin_auth)
+USER_AUTH_DEP = Depends(require_user_auth)
 TASK_DEP = Depends(get_task_or_404)
 
 
@@ -511,6 +512,7 @@ async def _reconcile_dependents_for_dependency_toggle(
                         "Task returned to inbox: dependency reopened " f"({dependency_task.title})."
                     ),
                     agent_id=actor_agent_id,
+                    board_id=dependent.board_id,
                 )
             else:
                 record_activity(
@@ -519,6 +521,7 @@ async def _reconcile_dependents_for_dependency_toggle(
                     task_id=dependent.id,
                     message=f"Dependency completion changed: {dependency_task.title}.",
                     agent_id=actor_agent_id,
+                    board_id=dependent.board_id,
                 )
         else:
             record_activity(
@@ -527,6 +530,7 @@ async def _reconcile_dependents_for_dependency_toggle(
                 task_id=dependent.id,
                 message=f"Dependency completion changed: {dependency_task.title}.",
                 agent_id=actor_agent_id,
+                board_id=dependent.board_id,
             )
 
 
@@ -658,15 +662,57 @@ async def _latest_task_comment_by_agent(
     return (await session.exec(statement)).first()
 
 
+async def _wake_agent_online_for_task(
+    *,
+    session: AsyncSession,
+    board: Board,
+    task: Task,
+    agent: Agent,
+    reason: str,
+) -> None:
+    if not agent.openclaw_session_id:
+        return
+    service = AgentLifecycleService(session)
+    try:
+        await service.commit_heartbeat(agent=agent, status_value="online")
+        record_activity(
+            session,
+            event_type="task.assignee_woken",
+            message=(f"Assignee heartbeat set online ({reason}): {agent.name}."),
+            agent_id=agent.id,
+            task_id=task.id,
+            board_id=board.id,
+        )
+    except Exception as exc:  # pragma: no cover - best effort wake path
+        record_activity(
+            session,
+            event_type="task.assignee_wake_failed",
+            message=(f"Assignee wake failed ({reason}): {agent.name}. Error: {exc!s}"),
+            agent_id=agent.id,
+            task_id=task.id,
+            board_id=board.id,
+        )
+    await session.commit()
+
+
 async def _notify_agent_on_task_assign(
     *,
     session: AsyncSession,
     board: Board,
     task: Task,
     agent: Agent,
+    wake_assignee: bool = True,
 ) -> None:
     if not agent.openclaw_session_id:
         return
+    if wake_assignee:
+        await _wake_agent_online_for_task(
+            session=session,
+            board=board,
+            task=task,
+            agent=agent,
+            reason="assignment",
+        )
     dispatch = GatewayDispatchService(session)
     config = await dispatch.optional_gateway_config_for_board(board)
     if config is None:
@@ -686,6 +732,7 @@ async def _notify_agent_on_task_assign(
             message=f"Agent notified for assignment: {agent.name}.",
             agent_id=agent.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
     else:
@@ -695,6 +742,7 @@ async def _notify_agent_on_task_assign(
             message=f"Assignee notify failed: {error}",
             agent_id=agent.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
 
@@ -737,6 +785,7 @@ async def _notify_agent_on_task_rework(
             message=f"Assignee notified about requested changes: {agent.name}.",
             agent_id=agent.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
     else:
@@ -746,6 +795,7 @@ async def _notify_agent_on_task_rework(
             message=f"Rework notify failed: {error}",
             agent_id=agent.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
 
@@ -810,6 +860,7 @@ async def _notify_lead_on_task_create(
             message=f"Lead agent notified for task: {task.title}.",
             agent_id=lead.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
     else:
@@ -819,6 +870,7 @@ async def _notify_lead_on_task_create(
             message=f"Lead notify failed: {error}",
             agent_id=lead.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
 
@@ -867,6 +919,7 @@ async def _notify_lead_on_task_unassigned(
             message=f"Lead notified task returned to inbox: {task.title}.",
             agent_id=lead.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
     else:
@@ -876,6 +929,7 @@ async def _notify_lead_on_task_unassigned(
             message=f"Lead notify failed: {error}",
             agent_id=lead.id,
             task_id=task.id,
+            board_id=board.id,
         )
         await session.commit()
 
@@ -1300,7 +1354,10 @@ def _task_event_payload(
     resolved_custom_field_values_by_task_id = custom_field_values_by_task_id or {}
     payload: dict[str, object] = {
         "type": event.event_type,
-        "activity": ActivityEventRead.model_validate(event).model_dump(mode="json"),
+        "activity": ActivityEventRead.model_validate(event).model_dump(
+            mode="json",
+            exclude={"board_id", "route_name", "route_params"},
+        ),
     }
     if event.event_type == "task.comment":
         payload["comment"] = _serialize_comment(event)
@@ -1435,7 +1492,7 @@ async def create_task(
     payload: TaskCreate,
     board: Board = BOARD_WRITE_DEP,
     session: AsyncSession = SESSION_DEP,
-    auth: AuthContext = ADMIN_AUTH_DEP,
+    auth: AuthContext = USER_AUTH_DEP,
 ) -> TaskRead:
     """Create a task and initialize dependency rows."""
     data = payload.model_dump(exclude={"depends_on_task_ids", "tag_ids", "custom_field_values"})
@@ -1500,6 +1557,7 @@ async def create_task(
         event_type="task.created",
         task_id=task.id,
         message=f"Task created: {task.title}.",
+        board_id=board.id,
     )
     await session.commit()
     await _notify_lead_on_task_create(session=session, board=board, task=task)
@@ -1657,7 +1715,7 @@ async def delete_task_and_related_records(
 async def delete_task(
     session: AsyncSession = SESSION_DEP,
     task: Task = TASK_DEP,
-    auth: AuthContext = ADMIN_AUTH_DEP,
+    auth: AuthContext = USER_AUTH_DEP,
 ) -> OkResponse:
     """Delete a task and related records."""
     if task.board_id is None:
@@ -2106,7 +2164,16 @@ async def _lead_apply_status(
     lead_agent = update.actor.agent
     if "status" not in update.updates:
         return
+    target_status = _required_status_value(update.updates["status"])
+    # Leads may set `in_progress` when simultaneously assigning an agent to an
+    # inbox task (assignment-and-start shortcut).
     if update.task.status != "review":
+        assigning_agent = "assigned_agent_id" in update.updates and bool(
+            _optional_assigned_agent_id(update.updates["assigned_agent_id"])
+        )
+        if update.task.status == "inbox" and target_status == "in_progress" and assigning_agent:
+            update.task.status = target_status
+            return
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
@@ -2114,7 +2181,6 @@ async def _lead_apply_status(
                 f"task status is `review` (current: `{update.task.status}`)."
             ),
         )
-    target_status = _required_status_value(update.updates["status"])
     if target_status not in {"done", "inbox"}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -2258,6 +2324,7 @@ async def _apply_lead_task_update(
         task_id=update.task.id,
         message=message,
         agent_id=update.actor.agent.id,
+        board_id=update.board_id,
     )
     await _reconcile_dependents_for_dependency_toggle(
         session,
@@ -2443,6 +2510,7 @@ async def _record_task_comment_from_update(
         event_type="task.comment",
         message=update.comment,
         task_id=update.task.id,
+        board_id=update.task.board_id,
         agent_id=(
             update.actor.agent.id
             if update.actor.actor_type == "agent" and update.actor.agent
@@ -2472,6 +2540,7 @@ async def _record_task_update_activity(
         task_id=update.task.id,
         message=message,
         agent_id=actor_agent_id,
+        board_id=update.board_id,
     )
     await _reconcile_dependents_for_dependency_toggle(
         session,
@@ -2505,38 +2574,55 @@ async def _notify_task_update_assignment_changes(
     *,
     update: _TaskUpdateInput,
 ) -> None:
+    board: Board | None = None
+
+    async def _board() -> Board | None:
+        nonlocal board
+        if board is None and update.task.board_id:
+            board = await Board.objects.by_id(update.task.board_id).first(session)
+        return board
+
     if (
         update.task.status == "inbox"
         and update.task.assigned_agent_id is None
         and (update.previous_status != "inbox" or update.previous_assigned is not None)
     ):
-        board = (
-            await Board.objects.by_id(update.task.board_id).first(session)
-            if update.task.board_id
-            else None
-        )
-        if board:
+        current_board = await _board()
+        if current_board:
             await _notify_lead_on_task_unassigned(
                 session=session,
-                board=board,
+                board=current_board,
                 task=update.task,
             )
 
-    if (
-        not update.task.assigned_agent_id
-        or update.task.assigned_agent_id == update.previous_assigned
-    ):
+    if not update.task.assigned_agent_id:
         return
+
     assigned_agent = await Agent.objects.by_id(update.task.assigned_agent_id).first(
         session,
     )
     if assigned_agent is None:
         return
-    board = (
-        await Board.objects.by_id(update.task.board_id).first(session)
-        if update.task.board_id
-        else None
+
+    assignment_changed = update.task.assigned_agent_id != update.previous_assigned
+    entered_in_progress = (
+        update.task.status == "in_progress" and update.previous_status != "in_progress"
     )
+
+    if entered_in_progress and not assignment_changed:
+        current_board = await _board()
+        if current_board:
+            await _wake_agent_online_for_task(
+                session=session,
+                board=current_board,
+                task=update.task,
+                agent=assigned_agent,
+                reason="status_in_progress",
+            )
+
+    if not assignment_changed:
+        return
+
     if (
         update.previous_status == "review"
         and update.task.status == "inbox"
@@ -2544,27 +2630,32 @@ async def _notify_task_update_assignment_changes(
         and update.actor.agent
         and update.actor.agent.is_board_lead
     ):
-        if board:
+        current_board = await _board()
+        if current_board:
             await _notify_agent_on_task_rework(
                 session=session,
-                board=board,
+                board=current_board,
                 task=update.task,
                 agent=assigned_agent,
                 lead=update.actor.agent,
             )
         return
+
     if (
         update.actor.actor_type == "agent"
         and update.actor.agent
         and update.task.assigned_agent_id == update.actor.agent.id
     ):
         return
-    if board:
+
+    current_board = await _board()
+    if current_board:
         await _notify_agent_on_task_assign(
             session=session,
-            board=board,
+            board=current_board,
             task=update.task,
             agent=assigned_agent,
+            wake_assignee=True,
         )
 
 
@@ -2671,6 +2762,7 @@ async def create_task_comment(
         event_type="task.comment",
         message=payload.message,
         task_id=task.id,
+        board_id=task.board_id,
         agent_id=_comment_actor_id(actor),
     )
     session.add(event)

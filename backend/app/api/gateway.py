@@ -37,8 +37,8 @@ def _query_to_resolve_input(
     board_id: str | None = Query(default=None),
     gateway_url: str | None = Query(default=None),
     gateway_token: str | None = Query(default=None),
-    gateway_disable_device_pairing: bool = Query(default=False),
-    gateway_allow_insecure_tls: bool = Query(default=False),
+    gateway_disable_device_pairing: bool | None = Query(default=None),
+    gateway_allow_insecure_tls: bool | None = Query(default=None),
 ) -> GatewayResolveQuery:
     return GatewaySessionService.to_resolve_query(
         board_id=board_id,
@@ -127,6 +127,7 @@ async def send_gateway_session_message(
     board_id: str | None = BOARD_ID_QUERY,
     session: AsyncSession = SESSION_DEP,
     auth: AuthContext = AUTH_DEP,
+    ctx: OrganizationContext = ORG_ADMIN_DEP,
 ) -> OkResponse:
     """Send a message into a specific gateway session."""
     service = GatewaySessionService(session)
@@ -134,6 +135,7 @@ async def send_gateway_session_message(
         session_id=session_id,
         payload=payload,
         board_id=board_id,
+        organization_id=ctx.organization.id,
         user=auth.user,
     )
     return OkResponse()

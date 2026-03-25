@@ -24,6 +24,7 @@ import type {
   AgentCreate,
   AgentHeartbeat,
   AgentHeartbeatCreate,
+  AgentHubGatewayRead,
   AgentRead,
   AgentUpdate,
   HTTPValidationError,
@@ -567,6 +568,179 @@ export function useStreamAgentsApiV1AgentsStreamGet<
     params,
     options,
   );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Return agents grouped by gateway with task counts, skills, and activity for the Agent Hub.
+ * @summary List Agents Hub
+ */
+export type listAgentsHubApiV1AgentsHubGetResponse200 = {
+  data: AgentHubGatewayRead[];
+  status: 200;
+};
+
+export type listAgentsHubApiV1AgentsHubGetResponseSuccess =
+  listAgentsHubApiV1AgentsHubGetResponse200 & {
+    headers: Headers;
+  };
+export type listAgentsHubApiV1AgentsHubGetResponse =
+  listAgentsHubApiV1AgentsHubGetResponseSuccess;
+
+export const getListAgentsHubApiV1AgentsHubGetUrl = () => {
+  return `/api/v1/agents/hub`;
+};
+
+export const listAgentsHubApiV1AgentsHubGet = async (
+  options?: RequestInit,
+): Promise<listAgentsHubApiV1AgentsHubGetResponse> => {
+  return customFetch<listAgentsHubApiV1AgentsHubGetResponse>(
+    getListAgentsHubApiV1AgentsHubGetUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListAgentsHubApiV1AgentsHubGetQueryKey = () => {
+  return [`/api/v1/agents/hub`] as const;
+};
+
+export const getListAgentsHubApiV1AgentsHubGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+      TError,
+      TData
+    >
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAgentsHubApiV1AgentsHubGetQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>
+  > = ({ signal }) =>
+    listAgentsHubApiV1AgentsHubGet({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListAgentsHubApiV1AgentsHubGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>
+>;
+export type ListAgentsHubApiV1AgentsHubGetQueryError = unknown;
+
+export function useListAgentsHubApiV1AgentsHubGet<
+  TData = Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListAgentsHubApiV1AgentsHubGet<
+  TData = Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListAgentsHubApiV1AgentsHubGet<
+  TData = Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List Agents Hub
+ */
+
+export function useListAgentsHubApiV1AgentsHubGet<
+  TData = Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAgentsHubApiV1AgentsHubGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getListAgentsHubApiV1AgentsHubGetQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

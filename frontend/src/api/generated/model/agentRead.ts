@@ -4,6 +4,8 @@
  * Mission Control API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentReadChannelsConfig } from "./agentReadChannelsConfig";
+import type { AgentReadCronjobsConfig } from "./agentReadCronjobsConfig";
 import type { AgentReadHeartbeatConfig } from "./agentReadHeartbeatConfig";
 import type { AgentReadIdentityProfile } from "./agentReadIdentityProfile";
 
@@ -24,18 +26,14 @@ export interface AgentRead {
   heartbeat_config?: AgentReadHeartbeatConfig;
   /** Optional profile hints used by routing and policy checks. */
   identity_profile?: AgentReadIdentityProfile;
-  /** Iteration limit to prevent infinite loops. */
-  max_iterations?: number | null;
-  /** Token usage boundary to prevent infinite billing. */
-  token_budget?: number | null;
   /** Template that helps define initial intent and behavior. */
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */
   soul_template?: string | null;
   /** Configuration for communication channels like Telegram or Discord. */
-  channels_config?: {[key: string]: unknown} | null;
+  channels_config?: AgentReadChannelsConfig;
   /** List of automated tasks/cronjobs for the agent. */
-  cronjobs_config?: {[key: string]: unknown}[] | null;
+  cronjobs_config?: AgentReadCronjobsConfig;
   /** Agent UUID. */
   id: string;
   /** Gateway UUID that manages this agent. */

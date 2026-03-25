@@ -4,6 +4,8 @@
  * Mission Control API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentUpdateChannelsConfig } from "./agentUpdateChannelsConfig";
+import type { AgentUpdateCronjobsConfig } from "./agentUpdateCronjobsConfig";
 import type { AgentUpdateHeartbeatConfig } from "./agentUpdateHeartbeatConfig";
 import type { AgentUpdateIdentityProfile } from "./agentUpdateIdentityProfile";
 
@@ -23,16 +25,12 @@ export interface AgentUpdate {
   heartbeat_config?: AgentUpdateHeartbeatConfig;
   /** Optional identity profile update values. */
   identity_profile?: AgentUpdateIdentityProfile;
-  /** Optional replacement iteration limit. */
-  max_iterations?: number | null;
-  /** Optional replacement token usage boundary. */
-  token_budget?: number | null;
   /** Optional replacement identity template. */
   identity_template?: string | null;
   /** Optional replacement soul template. */
   soul_template?: string | null;
   /** Optional replacement channels configuration. */
-  channels_config?: {[key: string]: unknown} | null;
+  channels_config?: AgentUpdateChannelsConfig;
   /** Optional replacement cronjobs configuration. */
-  cronjobs_config?: {[key: string]: unknown}[] | null;
+  cronjobs_config?: AgentUpdateCronjobsConfig;
 }

@@ -24,6 +24,7 @@ FORCE_LOCAL_AUTH_TOKEN=""
 FORCE_DB_MODE=""
 FORCE_DATABASE_URL=""
 FORCE_START_SERVICES=""
+FORCE_INSTALL_SERVICE=""
 
 if [[ -t 0 ]]; then
   INTERACTIVE=1
@@ -65,6 +66,7 @@ Options:
   --db-mode <docker|external>     Local mode only
   --database-url <url>            Required when --db-mode external
   --start-services <yes|no>       Local mode only
+  --install-service               Local mode only: install systemd user units for run at boot (Linux)
   -h, --help
 
 If an option is omitted, the script prompts in interactive mode and uses defaults in non-interactive mode.
@@ -153,6 +155,10 @@ parse_args() {
         fi
         FORCE_START_SERVICES="$2"
         shift 2
+        ;;
+      --install-service)
+        FORCE_INSTALL_SERVICE="yes"
+        shift
         ;;
       -h|--help)
         usage
@@ -667,6 +673,49 @@ start_local_services() {
   )
 }
 
+install_systemd_services() {
+  local backend_port="$1"
+  local frontend_port="$2"
+  local systemd_user_dir
+  systemd_user_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  local units_dir="$REPO_ROOT/docs/deployment/systemd"
+
+  if [[ "$REPO_ROOT" == *" "* ]]; then
+    warn "REPO_ROOT must not contain spaces (systemd unit paths do not support it): $REPO_ROOT"
+    return 1
+  fi
+  if [[ "$PLATFORM" != "linux" ]]; then
+    info "Skipping systemd install (not Linux). For macOS run-at-boot see docs/deployment/README.md (launchd)."
+    return 0
+  fi
+  if [[ ! -d "$units_dir" ]]; then
+    warn "Systemd units dir not found: $units_dir"
+    return 1
+  fi
+  for name in openclaw-mission-control-backend openclaw-mission-control-frontend openclaw-mission-control-rq-worker; do
+    if [[ ! -f "$units_dir/$name.service" ]]; then
+      warn "Unit file not found: $units_dir/$name.service"
+      return 1
+    fi
+  done
+
+  mkdir -p "$systemd_user_dir"
+  for name in openclaw-mission-control-backend openclaw-mission-control-frontend openclaw-mission-control-rq-worker; do
+    sed -e "s|REPO_ROOT|$REPO_ROOT|g" \
+        -e "s|BACKEND_PORT|$backend_port|g" \
+        -e "s|FRONTEND_PORT|$frontend_port|g" \
+        "$units_dir/$name.service" > "$systemd_user_dir/$name.service"
+    info "Installed $systemd_user_dir/$name.service"
+  done
+  if command_exists systemctl; then
+    systemctl --user daemon-reload
+    systemctl --user enable openclaw-mission-control-backend openclaw-mission-control-frontend openclaw-mission-control-rq-worker
+    info "Systemd user units enabled. Start with: systemctl --user start openclaw-mission-control-backend openclaw-mission-control-frontend openclaw-mission-control-rq-worker"
+  else
+    warn "systemctl not found; units were copied but not enabled."
+  fi
+}
+
 ensure_repo_layout() {
   [[ -f "$REPO_ROOT/Makefile" ]] || die "Run $SCRIPT_NAME from repository root."
   [[ -f "$REPO_ROOT/compose.yml" ]] || die "Missing compose.yml in repository root."
@@ -807,6 +856,7 @@ main() {
   upsert_env_value "$REPO_ROOT/.env" "AUTH_MODE" "local"
   upsert_env_value "$REPO_ROOT/.env" "LOCAL_AUTH_TOKEN" "$local_auth_token"
   upsert_env_value "$REPO_ROOT/.env" "NEXT_PUBLIC_API_URL" "$next_public_api_url"
+  upsert_env_value "$REPO_ROOT/.env" "BASE_URL" "http://$public_host:$backend_port"
   upsert_env_value "$REPO_ROOT/.env" "CORS_ORIGINS" "http://$public_host:$frontend_port"
 
   if [[ "$deployment_mode" == "docker" ]]; then
@@ -877,6 +927,16 @@ SUMMARY
     start_local_services "$backend_port" "$frontend_port"
     wait_for_http "http://127.0.0.1:$backend_port/healthz" "Backend" 120 || true
     wait_for_http "http://127.0.0.1:$frontend_port" "Frontend" 120 || true
+  fi
+
+  if [[ -n "$FORCE_INSTALL_SERVICE" ]]; then
+    if ! install_systemd_services "$backend_port" "$frontend_port"; then
+      warn "Systemd service install failed; see errors above."
+      die "Cannot continue when --install-service was requested and install failed."
+    fi
+    if [[ "$PLATFORM" == "linux" ]]; then
+      info "Run at boot: systemd user units were installed and enabled. Start with: systemctl --user start openclaw-mission-control-backend openclaw-mission-control-frontend openclaw-mission-control-rq-worker"
+    fi
   fi
 
   cat <<SUMMARY

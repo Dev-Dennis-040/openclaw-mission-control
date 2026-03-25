@@ -36,7 +36,6 @@ import {
 import { DashboardShell } from "@/components/templates/DashboardShell";
 import { BoardChatComposer } from "@/components/BoardChatComposer";
 import { TaskCustomFieldsEditor } from "./TaskCustomFieldsEditor";
-import { buildUrlWithTaskId } from "./task-detail-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -119,6 +118,7 @@ import {
   resolveHumanActorName,
   resolveMemberDisplayName,
 } from "@/lib/display-name";
+import { AGENT_EMOJI_GLYPHS } from "@/lib/agent-emoji";
 import { cn } from "@/lib/utils";
 import { usePageActive } from "@/hooks/usePageActive";
 import {
@@ -519,19 +519,6 @@ const statusOptions = [
   { value: "done", label: "Done" },
 ];
 
-const EMOJI_GLYPHS: Record<string, string> = {
-  ":gear:": "⚙️",
-  ":sparkles:": "✨",
-  ":rocket:": "🚀",
-  ":megaphone:": "📣",
-  ":chart_with_upwards_trend:": "📈",
-  ":bulb:": "💡",
-  ":wrench:": "🔧",
-  ":shield:": "🛡️",
-  ":memo:": "📝",
-  ":brain:": "🧠",
-};
-
 const SSE_RECONNECT_BACKOFF = {
   baseMs: 1_000,
   factor: 2,
@@ -549,6 +536,9 @@ const formatShortTimestamp = (value: string) => {
     minute: "2-digit",
   });
 };
+
+const commentElementId = (id: string): string =>
+  `task-comment-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
 type ToastMessage = {
   id: number;
@@ -596,13 +586,23 @@ const resolveBoardAccess = (
 const TaskCommentCard = memo(function TaskCommentCard({
   comment,
   authorLabel,
+  isHighlighted = false,
 }: {
   comment: TaskComment;
   authorLabel: string;
+  isHighlighted?: boolean;
 }) {
   const message = (comment.message ?? "").trim();
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
+    <div
+      id={commentElementId(comment.id)}
+      className={cn(
+        "scroll-mt-28 rounded-xl border bg-white p-3 transition",
+        isHighlighted
+          ? "border-blue-300 ring-2 ring-blue-200"
+          : "border-slate-200",
+      )}
+    >
       <div className="flex items-center justify-between text-xs text-slate-500">
         <span>{authorLabel}</span>
         <span>{formatShortTimestamp(comment.created_at)}</span>
@@ -747,6 +747,35 @@ export default function BoardDetailPage() {
   const { isSignedIn } = useAuth();
   const isPageActive = usePageActive();
   const taskIdFromUrl = searchParams.get("taskId");
+  const commentIdFromUrl = searchParams.get("commentId");
+  const panelFromUrl = searchParams.get("panel");
+  const buildUrlWithTaskAndComment = useCallback(
+    (
+      taskId: string | null,
+      commentId: string | null,
+      panel: "chat" | null = null,
+    ): string => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (taskId) {
+        params.set("taskId", taskId);
+      } else {
+        params.delete("taskId");
+      }
+      if (commentId) {
+        params.set("commentId", commentId);
+      } else {
+        params.delete("commentId");
+      }
+      if (panel) {
+        params.set("panel", panel);
+      } else {
+        params.delete("panel");
+      }
+      const next = params.toString();
+      return next ? `${pathname}?${next}` : pathname;
+    },
+    [pathname, searchParams],
+  );
 
   const membershipQuery = useGetMyMembershipApiV1OrganizationsMeMemberGet<
     getMyMembershipApiV1OrganizationsMeMemberGetResponse,
@@ -830,7 +859,9 @@ export default function BoardDetailPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const selectedTaskIdRef = useRef<string | null>(null);
   const openedTaskIdFromUrlRef = useRef<string | null>(null);
+  const openedPanelFromUrlRef = useRef<string | null>(null);
   const [comments, setComments] = useState<TaskComment[]>([]);
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null);
   const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([]);
   const liveFeedRef = useRef<LiveFeedItem[]>([]);
   const liveFeedFlashTimersRef = useRef<Record<string, number>>({});
@@ -2382,26 +2413,36 @@ export default function BoardDetailPage() {
   }, [isDetailOpen, selectedTask, boardId, isSignedIn]);
 
   const openComments = useCallback(
-    (task: { id: string }) => {
+    (
+      task: { id: string },
+      options?: {
+        preserveCommentTarget?: boolean;
+      },
+    ) => {
       setIsChatOpen(false);
       setIsLiveFeedOpen(false);
       const fullTask = tasksRef.current.find((item) => item.id === task.id);
       if (!fullTask) return;
+      const preserveCommentTarget = options?.preserveCommentTarget === true;
       const currentTaskIdFromUrl = searchParams.get("taskId");
-      if (currentTaskIdFromUrl !== fullTask.id) {
-        router.replace(
-          buildUrlWithTaskId(pathname, searchParams, fullTask.id),
-          {
-            scroll: false,
-          },
-        );
+      const currentCommentIdFromUrl = searchParams.get("commentId");
+      const targetCommentId = preserveCommentTarget
+        ? currentCommentIdFromUrl
+        : null;
+      if (
+        currentTaskIdFromUrl !== fullTask.id ||
+        currentCommentIdFromUrl !== targetCommentId
+      ) {
+        router.replace(buildUrlWithTaskAndComment(fullTask.id, targetCommentId), {
+          scroll: false,
+        });
       }
       selectedTaskIdRef.current = fullTask.id;
       setSelectedTask(fullTask);
       setIsDetailOpen(true);
       void loadComments(task.id);
     },
-    [loadComments, pathname, router, searchParams],
+    [buildUrlWithTaskAndComment, loadComments, router, searchParams],
   );
 
   const selectedTaskDependencies = useMemo<DependencyBannerDependency[]>(() => {
@@ -2463,33 +2504,76 @@ export default function BoardDetailPage() {
     if (openedTaskIdFromUrlRef.current === taskIdFromUrl) return;
     const exists = tasks.some((task) => task.id === taskIdFromUrl);
     if (!exists) {
-      router.replace(buildUrlWithTaskId(pathname, searchParams, null), {
+      router.replace(buildUrlWithTaskAndComment(null, null), {
         scroll: false,
       });
       return;
     }
     openedTaskIdFromUrlRef.current = taskIdFromUrl;
-    openComments({ id: taskIdFromUrl });
+    openComments({ id: taskIdFromUrl }, { preserveCommentTarget: true });
   }, [
     hasLoadedBoardSnapshot,
+    buildUrlWithTaskAndComment,
     openComments,
-    pathname,
     router,
-    searchParams,
     taskIdFromUrl,
     tasks,
   ]);
 
+  useEffect(() => {
+    if (!hasLoadedBoardSnapshot) return;
+    if (panelFromUrl !== "chat") {
+      openedPanelFromUrlRef.current = null;
+      return;
+    }
+    if (openedPanelFromUrlRef.current === "chat") return;
+    openedPanelFromUrlRef.current = "chat";
+    setIsDetailOpen(false);
+    selectedTaskIdRef.current = null;
+    setSelectedTask(null);
+    setComments([]);
+    setCommentsError(null);
+    setPostCommentError(null);
+    setIsLiveFeedOpen(false);
+    setIsChatOpen(true);
+  }, [hasLoadedBoardSnapshot, panelFromUrl]);
+
+  useEffect(() => {
+    if (!isDetailOpen || !commentIdFromUrl) {
+      setHighlightedCommentId(null);
+      return;
+    }
+    const target = comments.find((comment) => comment.id === commentIdFromUrl);
+    if (!target) return;
+
+    setHighlightedCommentId(target.id);
+    const scrollTimer = window.setTimeout(() => {
+      const element = document.getElementById(commentElementId(target.id));
+      if (!element) return;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+    const clearTimer = window.setTimeout(() => {
+      setHighlightedCommentId((current) =>
+        current === target.id ? null : current,
+      );
+    }, 4_000);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [commentIdFromUrl, comments, isDetailOpen]);
+
   const closeComments = () => {
     openedTaskIdFromUrlRef.current = null;
-    if (searchParams.get("taskId")) {
-      router.replace(buildUrlWithTaskId(pathname, searchParams, null), {
+    if (searchParams.get("taskId") || searchParams.get("commentId")) {
+      router.replace(buildUrlWithTaskAndComment(null, null), {
         scroll: false,
       });
     }
     setIsDetailOpen(false);
     selectedTaskIdRef.current = null;
     setSelectedTask(null);
+    setHighlightedCommentId(null);
     setComments([]);
     setCommentsError(null);
     setPostCommentError(null);
@@ -2501,10 +2585,24 @@ export default function BoardDetailPage() {
       closeComments();
     }
     setIsLiveFeedOpen(false);
+    if (
+      searchParams.get("panel") !== "chat" ||
+      searchParams.get("taskId") ||
+      searchParams.get("commentId")
+    ) {
+      router.replace(buildUrlWithTaskAndComment(null, null, "chat"), {
+        scroll: false,
+      });
+    }
     setIsChatOpen(true);
   };
 
   const closeBoardChat = () => {
+    if (searchParams.get("panel") === "chat") {
+      router.replace(buildUrlWithTaskAndComment(null, null, null), {
+        scroll: false,
+      });
+    }
     setIsChatOpen(false);
     setChatError(null);
   };
@@ -2808,7 +2906,7 @@ export default function BoardDetailPage() {
     if (!value) return null;
     const trimmed = value.trim();
     if (!trimmed) return null;
-    if (EMOJI_GLYPHS[trimmed]) return EMOJI_GLYPHS[trimmed];
+    if (AGENT_EMOJI_GLYPHS[trimmed]) return AGENT_EMOJI_GLYPHS[trimmed];
     if (trimmed.startsWith(":") && trimmed.endsWith(":")) return null;
     return trimmed;
   };
@@ -3029,7 +3127,7 @@ export default function BoardDetailPage() {
           )}
         >
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm">
-            <div className="px-8 py-6">
+            <div className="px-4 py-4 md:px-8 md:py-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h1 className="mt-2 text-2xl font-semibold text-slate-900 tracking-tight">
@@ -3165,9 +3263,9 @@ export default function BoardDetailPage() {
             </div>
           </div>
 
-          <div className="relative flex gap-6 p-6">
+          <div className="relative flex flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-6">
             {isOrgAdmin ? (
-              <aside className="flex h-full w-64 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+              <aside className="flex w-full flex-col rounded-xl border border-slate-200 bg-white shadow-sm md:h-full md:w-64">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -3608,12 +3706,12 @@ export default function BoardDetailPage() {
       ) : null}
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-[max(760px,45vw)] max-w-[99vw] transform bg-white shadow-2xl transition-transform",
+          "fixed right-0 top-0 z-50 h-full w-full max-w-[99vw] transform bg-white shadow-2xl transition-transform md:w-[max(760px,45vw)]",
           isDetailOpen ? "transform-none" : "translate-x-full",
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 md:px-6 md:py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Task detail
@@ -3677,7 +3775,7 @@ export default function BoardDetailPage() {
                       return (
                         <div
                           key={definition.id}
-                          className="grid grid-cols-[160px_1fr] gap-3"
+                          className="grid grid-cols-1 gap-2 sm:grid-cols-[160px_1fr] sm:gap-3"
                         >
                           <dt className="text-xs font-semibold text-slate-600">
                             {definition.label || definition.field_key}
@@ -3904,6 +4002,7 @@ export default function BoardDetailPage() {
                     <TaskCommentCard
                       key={comment.id}
                       comment={comment}
+                      isHighlighted={highlightedCommentId === comment.id}
                       authorLabel={
                         comment.agent_id
                           ? (assigneeById.get(comment.agent_id) ?? "Agent")
@@ -3920,12 +4019,12 @@ export default function BoardDetailPage() {
 
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-[560px] max-w-[96vw] transform border-l border-slate-200 bg-white shadow-2xl transition-transform",
+          "fixed right-0 top-0 z-50 h-full w-full max-w-[96vw] transform border-l border-slate-200 bg-white shadow-2xl transition-transform md:w-[560px]",
           isChatOpen ? "transform-none" : "translate-x-full",
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 md:px-6 md:py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Board chat
@@ -3982,12 +4081,12 @@ export default function BoardDetailPage() {
 
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-[520px] max-w-[96vw] transform border-l border-slate-200 bg-white shadow-2xl transition-transform",
+          "fixed right-0 top-0 z-50 h-full w-full max-w-[96vw] transform border-l border-slate-200 bg-white shadow-2xl transition-transform md:w-[520px]",
           isLiveFeedOpen ? "transform-none" : "translate-x-full",
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 md:px-6 md:py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Live feed

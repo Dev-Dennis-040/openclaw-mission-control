@@ -1,4 +1,5 @@
 import { getLocalAuthToken, isLocalAuthMode } from "@/auth/localAuth";
+import { getApiBaseUrl } from "@/lib/api-base";
 
 type ClerkSession = {
   getToken: () => Promise<string>;
@@ -39,14 +40,7 @@ export const customFetch = async <T>(
   url: string,
   options: RequestInit,
 ): Promise<T> => {
-  let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
-    rawBaseUrl = process.env.INTERNAL_API_URL;
-  }
-  if (!rawBaseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set.");
-  }
-  const baseUrl = rawBaseUrl.replace(/\/+$/, "");
+  const baseUrl = getApiBaseUrl();
 
   const headers = new Headers(options.headers);
   const hasBody = options.body !== undefined && options.body !== null;

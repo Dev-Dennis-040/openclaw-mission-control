@@ -6,8 +6,12 @@
  */
 
 export * from "./activityEventRead";
+export * from "./activityEventReadRouteParams";
 export * from "./activityTaskCommentFeedItemRead";
+export * from "./agentActivityItem";
 export * from "./agentCreate";
+export * from "./agentCreateChannelsConfig";
+export * from "./agentCreateCronjobsConfig";
 export * from "./agentCreateHeartbeatConfig";
 export * from "./agentCreateIdentityProfile";
 export * from "./agentHealthStatusResponse";
@@ -16,9 +20,13 @@ export * from "./agentHeartbeatCreate";
 export * from "./agentHubGatewayRead";
 export * from "./agentNudge";
 export * from "./agentRead";
+export * from "./agentReadChannelsConfig";
+export * from "./agentReadCronjobsConfig";
 export * from "./agentReadHeartbeatConfig";
 export * from "./agentReadIdentityProfile";
 export * from "./agentUpdate";
+export * from "./agentUpdateChannelsConfig";
+export * from "./agentUpdateCronjobsConfig";
 export * from "./agentUpdateHeartbeatConfig";
 export * from "./agentUpdateIdentityProfile";
 export * from "./approvalCreate";
@@ -78,6 +86,8 @@ export * from "./dashboardMetrics";
 export * from "./dashboardMetricsApiV1MetricsDashboardGetParams";
 export * from "./dashboardMetricsApiV1MetricsDashboardGetRangeKey";
 export * from "./dashboardMetricsRange";
+export * from "./dashboardPendingApproval";
+export * from "./dashboardPendingApprovals";
 export * from "./dashboardRangeSeries";
 export * from "./dashboardRangeSeriesBucket";
 export * from "./dashboardRangeSeriesRange";

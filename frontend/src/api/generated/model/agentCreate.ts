@@ -4,6 +4,8 @@
  * Mission Control API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentCreateChannelsConfig } from "./agentCreateChannelsConfig";
+import type { AgentCreateCronjobsConfig } from "./agentCreateCronjobsConfig";
 import type { AgentCreateHeartbeatConfig } from "./agentCreateHeartbeatConfig";
 import type { AgentCreateIdentityProfile } from "./agentCreateIdentityProfile";
 
@@ -24,12 +26,12 @@ export interface AgentCreate {
   heartbeat_config?: AgentCreateHeartbeatConfig;
   /** Optional profile hints used by routing and policy checks. */
   identity_profile?: AgentCreateIdentityProfile;
-  /** Iteration limit to prevent infinite loops. */
-  max_iterations?: number | null;
-  /** Token usage boundary to prevent infinite billing. */
-  token_budget?: number | null;
   /** Template that helps define initial intent and behavior. */
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */
   soul_template?: string | null;
+  /** Configuration for communication channels like Telegram or Discord. */
+  channels_config?: AgentCreateChannelsConfig;
+  /** List of automated tasks/cronjobs for the agent. */
+  cronjobs_config?: AgentCreateCronjobsConfig;
 }
