@@ -6,6 +6,7 @@
  */
 import type { AgentReadChannelsConfig } from "./agentReadChannelsConfig";
 import type { AgentReadCronjobsConfig } from "./agentReadCronjobsConfig";
+import type { AgentReadCurrentTaskInfo } from "./agentReadCurrentTaskInfo";
 import type { AgentReadHeartbeatConfig } from "./agentReadHeartbeatConfig";
 import type { AgentReadIdentityProfile } from "./agentReadIdentityProfile";
 
@@ -34,6 +35,12 @@ export interface AgentRead {
   channels_config?: AgentReadChannelsConfig;
   /** List of automated tasks/cronjobs for the agent. */
   cronjobs_config?: AgentReadCronjobsConfig;
+  /** Live state tracking an active background operation on this agent. */
+  current_task_info?: AgentReadCurrentTaskInfo;
+  /** Hard limit on iterations per task to avoid infinite billing loops. */
+  max_iterations?: number | null;
+  /** Safety threshold for tokens consumed before forcing the agent to sleep. */
+  token_budget?: number | null;
   /** Agent UUID. */
   id: string;
   /** Gateway UUID that manages this agent. */

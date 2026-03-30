@@ -236,6 +236,39 @@ export default function AgentDetailPage() {
                       </div>
                       <StatusPill status={agentStatus} />
                     </div>
+
+                    {agent.current_task_info &&
+                    typeof agent.current_task_info === "object" && (
+                      <div className="mt-6 space-y-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-4">
+                        <div className="flex items-center justify-between text-xs text-muted">
+                          <span className="font-semibold text-strong">
+                            {(agent.current_task_info as any).task ||
+                              "Active Background Task"}
+                          </span>
+                          <span>
+                            {(agent.current_task_info as any).progress_pct ?? 0}
+                            % • ETA:{" "}
+                            {(agent.current_task_info as any).eta || "N/A"}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-[color:var(--surface)]">
+                          <div
+                            className="h-full bg-[color:var(--accent)] transition-all duration-500 ease-in-out"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  0,
+                                  (agent.current_task_info as any).progress_pct ??
+                                    0,
+                                ),
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-quiet">

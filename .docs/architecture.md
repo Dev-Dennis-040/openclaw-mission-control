@@ -27,7 +27,10 @@ OpenClaw agents draaien uit veiligheidsoverwegingen binnen een sterk afgeschermd
 - **Architectuur Beslissing:** Probeer dit *niet* op te lossen met terminal hacks, bash scripts via `source /dev/tcp`, of door de sandbox uit te schakelen. De agent wordt geacht te communiceren en acties uit te voeren via gecontroleerde, officiële **AgentSkills**.
 - **Oplossing:** Voeg een specifieke HTTP/API-Skill (bijv. een "REST API plugin") toe via de Mission Control Skills Marketplace en wijs deze toe aan de agent. Eerder hebben we dit al gedaan voor externe web-interacties via de "Web Scraper" skill. Zodra de agent een HTTP/API-skill heeft, kan hij de interne Mission Control API weer netjes bereiken.
 
-## 5. Test en Verificatie Procedure
+## 5. Agent Live Progress
+Naast de standaard heartbeat status in de database (`status`), ondersteunen de OpenClaw agents een `current_task_info` payload (JSON). Agents en webhooks (bijv. via n8n) kunnen de API endpoint aanroepen met updates (bijv. `{"task": "Scraping", "progress_pct": 50, "eta": "2m"}`) om live voortgangsbalken over de hele OpenClaw interface aan te sturen zonder webhook payload overhead.
+
+## 6. Test en Verificatie Procedure
 - **Docker Stack**: Controleer of alle containers correct opstarten (`frontend`, `backend`, `db`).
 - **Health check**: Bezoek `http://localhost:8000/healthz`.
 - **UI Access**: Log in op `http://localhost:3000` met het `LOCAL_AUTH_TOKEN`.

@@ -111,6 +111,11 @@ class AgentBase(SQLModel):
         description="List of automated tasks/cronjobs for the agent.",
         examples=[[{"pattern": "0 8 * * *", "message": "Good morning"}]],
     )
+    current_task_info: dict[str, Any] | None = Field(
+        default=None,
+        description="Live state tracking an active background operation on this agent.",
+        examples=[{"task": "BSO Scraper", "progress_pct": 34, "eta": "15 min"}],
+    )
     max_iterations: int | None = Field(
         default=None,
         description="Hard limit on iterations per task to avoid infinite billing loops.",

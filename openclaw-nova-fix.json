@@ -78,6 +78,13 @@
                     "every": "10m",
                     "includeReasoning": false,
                     "target": "last"
+                },
+                "cron": {
+                    "Morning brief": {
+                        "schedule": "0 20 * * 4",
+                        "message": "Het is donderdagavond 20:00! Gebruik je exec tool om het kse_scraper.py script aan te roepen, analyseer het nieuwe ouderportaal nieuws dat eruit komt, en post een aparte wekelijkse samenvatting voor zowel Dane als Rain in onze documenten.",
+                        "enabled": true
+                    }
                 }
             },
             {

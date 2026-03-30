@@ -6,6 +6,7 @@
  */
 import type { AgentCreateChannelsConfig } from "./agentCreateChannelsConfig";
 import type { AgentCreateCronjobsConfig } from "./agentCreateCronjobsConfig";
+import type { AgentCreateCurrentTaskInfo } from "./agentCreateCurrentTaskInfo";
 import type { AgentCreateHeartbeatConfig } from "./agentCreateHeartbeatConfig";
 import type { AgentCreateIdentityProfile } from "./agentCreateIdentityProfile";
 
@@ -34,4 +35,10 @@ export interface AgentCreate {
   channels_config?: AgentCreateChannelsConfig;
   /** List of automated tasks/cronjobs for the agent. */
   cronjobs_config?: AgentCreateCronjobsConfig;
+  /** Live state tracking an active background operation on this agent. */
+  current_task_info?: AgentCreateCurrentTaskInfo;
+  /** Hard limit on iterations per task to avoid infinite billing loops. */
+  max_iterations?: number | null;
+  /** Safety threshold for tokens consumed before forcing the agent to sleep. */
+  token_budget?: number | null;
 }

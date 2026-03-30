@@ -33,4 +33,8 @@ export interface AgentUpdate {
   channels_config?: AgentUpdateChannelsConfig;
   /** Optional replacement cronjobs configuration. */
   cronjobs_config?: AgentUpdateCronjobsConfig;
+  /** Optional override for iteration limit before forcing a stop. */
+  max_iterations?: number | null;
+  /** Optional override for token limit safety threshold. */
+  token_budget?: number | null;
 }

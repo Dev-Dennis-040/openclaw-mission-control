@@ -53,6 +53,10 @@ class Agent(QueryModel, table=True):
         default=None,
         sa_column=Column(JSON),
     )
+    current_task_info: dict[str, Any] | None = Field(
+        default=None,
+        sa_column=Column(JSON),
+    )
     provision_requested_at: datetime | None = Field(default=None)
     provision_confirm_token_hash: str | None = Field(default=None, index=True)
     provision_action: str | None = Field(default=None, index=True)
