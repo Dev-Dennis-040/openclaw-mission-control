@@ -58,7 +58,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
-      - "traefik.http.routers.mission-control-api.rule=Host(`mc.devdennis.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.mission-control-api.rule=Host(`mc.devdennis.com`) && (PathPrefix(`/api`) || PathPrefix(`/media`))"
       - "traefik.http.routers.mission-control-api.entrypoints=websecure"
       - "traefik.http.routers.mission-control-api.tls.certresolver=mytlschallenge"
       - "traefik.http.services.mission-control-api.loadbalancer.server.port=8000"
