@@ -81,4 +81,4 @@ async def upload_media(
         f.write(body)
         
     # Standard URL pattern for the frontend/n8n to consume
-    return {"url": f"https://gateway.openclaw.com/media/{filename}"}
+    return {"url": f"https://mc.devdennis.com/media/{filename}"}
