@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
 from fastapi_pagination import add_pagination
+import os
 
 from app.api.activity import router as activity_router
 from app.api.agent import router as agent_router
@@ -28,6 +30,7 @@ from app.api.organizations import router as organizations_router
 from app.api.skills_marketplace import router as skills_marketplace_router
 from app.api.souls_directory import router as souls_directory_router
 from app.api.tags import router as tags_router
+from app.api.family_posts import router as family_posts_router
 from app.api.task_custom_fields import router as task_custom_fields_router
 from app.api.tasks import router as tasks_router
 from app.api.users import router as users_router
@@ -557,8 +560,13 @@ api_v1.include_router(approvals_router)
 api_v1.include_router(tasks_router)
 api_v1.include_router(task_custom_fields_router)
 api_v1.include_router(tags_router)
+api_v1.include_router(family_posts_router)
 api_v1.include_router(users_router)
 app.include_router(api_v1)
+
+# Ensure media directory exists before mounting
+os.makedirs("media", exist_ok=True)
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 add_pagination(app)
 logger.debug("app.routes.registered count=%s", len(app.routes))
