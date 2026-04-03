@@ -55,6 +55,8 @@ services:
     networks:
       - default
       - traefik-net
+    volumes:
+      - media_data:/app/media
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
@@ -139,6 +141,7 @@ services:
 
 volumes:
   postgres_data:
+  media_data:
 
 networks:
   default:
